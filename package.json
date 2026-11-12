@@ -1,0 +1,33 @@
+{
+  "name": "mss-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "backfill": "tsx scripts/backfill.ts",
+    "publish:snapshot": "tsx scripts/publish.ts",
+    "test:mss": "tsx scripts/test-mss.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vercel/blob": "0.27.0",
+    "lightweight-charts": "4.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "vite": "5.4.11"
+  }
+}
