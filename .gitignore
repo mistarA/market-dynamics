@@ -7,3 +7,5 @@ dist/
 .DS_Store
 public/data/snapshot.json
 data/cache/
+.vercel
+.env*
