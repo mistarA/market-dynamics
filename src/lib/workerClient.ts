@@ -8,6 +8,7 @@ import type {
   Row,
   Snapshot,
   SnapshotIndex,
+  SwingMethod,
   Timeframe,
 } from './types';
 
@@ -116,6 +117,7 @@ export class AnalysisClient {
     indexSlug: string,
     timeframe: Timeframe,
     confirmation: Confirmation,
+    method: SwingMethod,
     context: AnalysisContext,
   ): Promise<ComputeResult> {
     this.sequence += 1;
@@ -125,6 +127,7 @@ export class AnalysisClient {
       indexSlug,
       timeframe,
       confirmation,
+      method,
       context,
     });
   }
@@ -133,6 +136,7 @@ export class AnalysisClient {
     symbol: string,
     timeframe: Timeframe,
     confirmation: Confirmation,
+    method: SwingMethod,
     context: AnalysisContext,
   ): Promise<DetailResult> {
     this.sequence += 1;
@@ -142,6 +146,7 @@ export class AnalysisClient {
       symbol,
       timeframe,
       confirmation,
+      method,
       context,
     });
   }

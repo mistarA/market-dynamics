@@ -72,6 +72,8 @@ export function computeStructure(
           close: bar.c,
           breakoutPct: (bar.c / level - 1) * 100,
           stopLevel: lastLow ? lastLow.price : null,
+          stopIdx: lastLow ? lastLow.idx : null,
+          stopDate: lastLow ? lastLow.date : null,
         });
         trend = 1;
         lastHigh = null;
@@ -95,6 +97,8 @@ export function computeStructure(
           close: bar.c,
           breakoutPct: (bar.c / level - 1) * 100,
           stopLevel: lastHigh ? lastHigh.price : null,
+          stopIdx: lastHigh ? lastHigh.idx : null,
+          stopDate: lastHigh ? lastHigh.date : null,
         });
         trend = -1;
         lastLow = null;

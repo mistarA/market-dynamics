@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ColorType,
   CrosshairMode,
@@ -12,17 +13,21 @@ import { runSetup } from '../lib/backtest';
 import { formatDate, TIMEFRAME_LABEL } from '../lib/date';
 import { formatPct, formatPrice } from '../lib/format';
 import { computeStructure } from '../lib/mss';
-import { findExternalMarkers, findZigzagPivots } from '../lib/swings';
+import { findPivots } from '../lib/pivots';
+import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, findZigzagPivots } from '../lib/swings';
 import type {
   BacktestTrade,
+  Confirmation,
   Detail,
   Direction,
   Row,
   SwingMethod,
 } from '../lib/types';
 
-type PivotMode = 'external' | 'all';
 type TradeMode = 'off' | SwingMethod;
+
+/** Browse overlays are paused while the dashboard is being reviewed. */
+const SHOW_TRADE_OVERLAY = false;
 
 export type FocusTrade = {
   method: SwingMethod;
@@ -31,11 +36,9 @@ export type FocusTrade = {
   direction: Direction;
 };
 
-const SWING_HIGH = 'rgba(245,158,11,0.85)';
-const SWING_LOW = 'rgba(56,189,248,0.85)';
 const METHOD_COLOR: Record<SwingMethod, string> = {
-  fractal: '#818cf8',
-  atr: '#f5b544',
+  fractal: '#1d7a6c',
+  atr: '#b98a2c',
 };
 const SETUP_LABEL: Record<SwingMethod, string> = {
   fractal: 'Fractal k=2',
@@ -43,11 +46,11 @@ const SETUP_LABEL: Record<SwingMethod, string> = {
 };
 
 const EXIT_COLOR: Record<BacktestTrade['exitReason'], string> = {
-  target: '#22c55e',
-  stop: '#ef4444',
-  flip: '#818cf8',
-  ambiguous: '#f5b544',
-  open: '#8b97a8',
+  target: '#1d7a6c',
+  stop: '#c0482d',
+  flip: '#b98a2c',
+  ambiguous: '#b98a2c',
+  open: '#7a7164',
 };
 
 function rValue(value: number | null): string {
@@ -101,6 +104,8 @@ type Props = {
   loading: boolean;
   theme: 'dark' | 'light';
   focus: FocusTrade | null;
+  /** Opened from a card's chart button: show the chart before the drawer. */
+  startFull?: boolean;
   onClearFocus: () => void;
   onClose: () => void;
 };
@@ -111,14 +116,27 @@ export function DetailDrawer({
   loading,
   theme,
   focus,
+  startFull = false,
   onClearFocus,
   onClose,
 }: Props) {
   const chartRef = useRef<HTMLDivElement | null>(null);
-  const [pivotMode, setPivotMode] = useState<PivotMode>('external');
   const [tradeMode, setTradeMode] = useState<TradeMode>('off');
-  const [focusMethod, setFocusMethod] = useState<SwingMethod | null>(null);
   const [focusIndex, setFocusIndex] = useState(0);
+  /** Chart fills the viewport until the user exits or picks another symbol. */
+  const [chartFull, setChartFull] = useState(false);
+  /**
+   * The root dashboard toggle sets the default method. The chip in the chart
+   * overrides it for this symbol only; opening another symbol resets it.
+   */
+  const [chartOverride, setChartOverride] = useState<SwingMethod | null>(null);
+  const chartMethod: SwingMethod =
+    chartOverride ?? detail?.method ?? 'fractal';
+  /** Confirmation candles can be overridden here without touching the root. */
+  const [confirmationOverride, setConfirmationOverride] =
+    useState<Confirmation | null>(null);
+  const chartConfirmation: Confirmation =
+    confirmationOverride ?? detail?.confirmation ?? 1;
 
   /**
    * External swings are found on the same confirmed bars as MSS: when today is
@@ -128,11 +146,6 @@ export function DetailDrawer({
     if (!detail) return [];
     return detail.provisional ? detail.bars.slice(0, -1) : detail.bars;
   }, [detail]);
-
-  const externalSwings = useMemo(
-    () => findExternalMarkers(findZigzagPivots(detectionBars)),
-    [detectionBars],
-  );
 
   /**
    * Backtest trades are daily-bar only. Recompute them here for the inspected
@@ -149,12 +162,48 @@ export function DetailDrawer({
     };
   }, [detail]);
 
-  const activeMethod: SwingMethod = focusMethod ?? focus?.method ?? 'fractal';
+  /**
+   * The chart always reflects the selected algorithm: same pivots, same
+   * confirmation, same MSS flips, and the stop swing of the latest flip.
+   */
+  const chartStructure = useMemo(() => {
+    if (!detail || detectionBars.length < 3) return null;
+    const pivots =
+      chartMethod === 'fractal'
+        ? findPivots(detectionBars, 2)
+        : findZigzagPivots(
+            detectionBars,
+            EXTERNAL_ATR_MULTIPLE,
+            ATR_PERIOD,
+          );
+    return computeStructure(detail.bars, {
+      confirmation: chartConfirmation,
+      dropLast: detail.provisional,
+      pivots,
+    });
+  }, [detail, detectionBars, chartMethod, chartConfirmation]);
+
+  const activeMethod: SwingMethod = chartMethod;
   const focusTrades = trades ? trades[activeMethod] : [];
 
   useEffect(() => {
+    setChartOverride(null);
+    setConfirmationOverride(null);
+  }, [detail?.symbol]);
+
+  /** Keep the dashboard still behind the drawer, especially on touch screens. */
+  useEffect(() => {
+    if (!row) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [row]);
+
+  useEffect(() => {
     if (!focus || !trades) return;
-    setFocusMethod(focus.method);
+    setChartOverride(focus.method);
     setFocusIndex(
       Math.max(
         0,
@@ -170,7 +219,7 @@ export function DetailDrawer({
 
   useEffect(() => {
     if (!focus) {
-      setFocusMethod(null);
+      setChartOverride(null);
       setFocusIndex(0);
     }
   }, [focus]);
@@ -194,35 +243,59 @@ export function DetailDrawer({
     const list = trades[next];
     if (!list.length) return;
     setFocusIndex(nearestTrade(list, focused.entryDate));
-    setFocusMethod(next);
+    setChartOverride(next);
     setTradeMode(next);
+  };
+
+  /** Chart chip: override the root method for this drawer. */
+  const setChartMethod = (next: SwingMethod) => {
+    if (next === chartMethod) return;
+    if (focused) switchMethod(next);
+    setChartOverride(next);
   };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      // Escape leaves the full-screen chart before it closes the drawer.
+      if (chartFull) {
+        if (startFull) {
+          onClose();
+          return;
+        }
+        setChartFull(false);
+        return;
+      }
+      onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, chartFull, startFull]);
+
+  // A chart button opens straight into full screen; any other row opens the drawer.
+  useEffect(() => {
+    setChartFull(startFull);
+  }, [row?.symbol, startFull]);
 
   useEffect(() => {
     const container = chartRef.current;
     if (!detail || !container || detail.bars.length === 0) return;
 
     const light = theme === 'light';
-    const textColor = light ? '#475569' : '#8b97a8';
-    const gridLine = light ? 'rgba(15,23,42,0.07)' : 'rgba(255,255,255,0.035)';
-    const axisLine = light ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.08)';
-    const labelBg = light ? '#e2e8f0' : '#1f2937';
+    const textColor = light ? '#7a7164' : '#9b9181';
+    const gridLine = light ? 'rgba(28,25,21,0.06)' : 'rgba(236,228,210,0.05)';
+    const axisLine = light ? '#d9cfbc' : '#38322a';
+    const labelBg = light ? '#ece4d2' : '#25211b';
+    const crosshair = light ? 'rgba(29,122,108,0.45)' : 'rgba(63,184,162,0.45)';
+    const upColor = light ? '#1d7a6c' : '#3fb8a2';
+    const downColor = light ? '#c0482d' : '#e0694a';
 
     const chart = createChart(container, {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor,
-        fontFamily:
-          "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
         fontSize: 11,
       },
       grid: {
@@ -241,17 +314,17 @@ export function DetailDrawer({
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: 'rgba(129,140,248,0.4)', labelBackgroundColor: labelBg },
-        horzLine: { color: 'rgba(129,140,248,0.4)', labelBackgroundColor: labelBg },
+        vertLine: { color: crosshair, labelBackgroundColor: labelBg },
+        horzLine: { color: crosshair, labelBackgroundColor: labelBg },
       },
     });
 
     const series = chart.addCandlestickSeries({
-      upColor: '#22c55e',
-      downColor: '#ef4444',
+      upColor,
+      downColor,
       borderVisible: false,
-      wickUpColor: 'rgba(34,197,94,0.8)',
-      wickDownColor: 'rgba(239,68,68,0.8)',
+      wickUpColor: upColor,
+      wickDownColor: downColor,
     });
 
     series.setData(
@@ -264,46 +337,35 @@ export function DetailDrawer({
       })),
     );
 
-    const cutoff =
-      detail.timeframe === 'day'
-        ? detail.bars.length - 180
-        : detail.timeframe === 'week'
-          ? detail.bars.length - 80
-          : detail.bars.length - 36;
-
     const markers: SeriesMarker<Time>[] = [];
-    if (pivotMode === 'external') {
-      for (const swing of externalSwings) {
-        if (swing.idx < cutoff) continue;
-        markers.push({
-          time: swing.date as Time,
-          position: swing.kind === 'high' ? 'aboveBar' : 'belowBar',
-          color: swing.kind === 'high' ? SWING_HIGH : SWING_LOW,
-          shape: 'circle',
-          text: swing.label ?? undefined,
-          size: 1,
-        });
-      }
-    } else {
-      for (const pivot of detail.pivots) {
-        if (pivot.idx < cutoff) continue;
-        markers.push({
-          time: pivot.date as Time,
-          position: pivot.kind === 'high' ? 'aboveBar' : 'belowBar',
-          color: pivot.kind === 'high' ? 'rgba(245,158,11,0.55)' : 'rgba(56,189,248,0.55)',
-          shape: 'circle',
-          size: 0.6,
-        });
-      }
-    }
-    for (const event of detail.events) {
+    const events = chartStructure?.events ?? detail.events;
+    const eventLabel = chartMethod === 'atr' ? 'ATR MSS' : 'MSS';
+    for (const event of events) {
       markers.push({
         time: event.date as Time,
         position: event.direction === 'bullish' ? 'belowBar' : 'aboveBar',
-        color: event.direction === 'bullish' ? '#22c55e' : '#ef4444',
+        color: event.direction === 'bullish' ? upColor : downColor,
         shape: event.direction === 'bullish' ? 'arrowUp' : 'arrowDown',
-        text: 'MSS',
+        text: eventLabel,
         size: 1.2,
+      });
+    }
+
+    // Only the swing that backs the stop of the latest flip is marked: a low
+    // for bullish structure, a high for bearish structure.
+    const lastEvent = chartStructure?.lastEvent ?? null;
+    const slLevel = lastEvent?.stopLevel ?? null;
+    const slDate = lastEvent?.stopDate ?? null;
+    const slBullish = lastEvent?.direction === 'bullish';
+    const slColor = slBullish ? upColor : downColor;
+    if (!focused && slLevel !== null && slDate) {
+      markers.push({
+        time: slDate as Time,
+        position: slBullish ? 'belowBar' : 'aboveBar',
+        color: slColor,
+        shape: 'circle',
+        text: 'SL',
+        size: 1,
       });
     }
 
@@ -330,7 +392,7 @@ export function DetailDrawer({
           size: 1.2,
         });
       }
-    } else if (tradeMode !== 'off' && trades) {
+    } else if (SHOW_TRADE_OVERLAY && tradeMode !== 'off' && trades) {
       // Browse mode: every entry and resolved exit for the selected setup.
       for (const trade of trades[tradeMode].slice(-60)) {
         markers.push({
@@ -388,7 +450,7 @@ export function DetailDrawer({
       });
       series.createPriceLine({
         price: focused.stop,
-        color: 'rgba(239,68,68,0.9)',
+        color: downColor,
         lineWidth: 1,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
@@ -396,33 +458,21 @@ export function DetailDrawer({
       });
       series.createPriceLine({
         price: focused.target,
-        color: 'rgba(34,197,94,0.9)',
+        color: upColor,
         lineWidth: 1,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
         title: '2R target',
       });
-    } else {
-      if (detail.activeHigh !== null) {
-        series.createPriceLine({
-          price: detail.activeHigh,
-          color: 'rgba(239,68,68,0.45)',
-          lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title: 'swing high',
-        });
-      }
-      if (detail.activeLow !== null) {
-        series.createPriceLine({
-          price: detail.activeLow,
-          color: 'rgba(34,197,94,0.45)',
-          lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
-          axisLabelVisible: true,
-          title: 'swing low',
-        });
-      }
+    } else if (slLevel !== null) {
+      series.createPriceLine({
+        price: slLevel,
+        color: slColor,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'SL',
+      });
     }
 
     if (focused) {
@@ -446,18 +496,25 @@ export function DetailDrawer({
   }, [
     detail,
     theme,
-    pivotMode,
-    externalSwings,
+    chartStructure,
+    chartMethod,
     trades,
     tradeMode,
     focus,
     focused,
     activeMethod,
+    // Re-render the chart at the new size so the bars fill the canvas.
+    chartFull,
   ]);
 
   if (!row) return null;
 
-  const recentEvents = detail ? [...detail.events].slice(-8).reverse() : [];
+  const shown = chartStructure ?? detail;
+  const recentEvents = shown ? [...shown.events].slice(-8).reverse() : [];
+  const currentEvent = shown?.lastEvent ?? null;
+  const currentBarsSince = shown?.barsSince ?? null;
+  const currentHigh = shown?.activeHigh ?? null;
+  const currentLow = shown?.activeLow ?? null;
   const focusPosition =
     focusTrades.length === 0 ? 0 : Math.min(focusIndex + 1, focusTrades.length);
 
@@ -480,7 +537,8 @@ export function DetailDrawer({
               {row.industry}
               <span className="dot" />
               {detail ? TIMEFRAME_LABEL[detail.timeframe] : ''}
-              {detail ? ` · ${detail.confirmation}-bar confirmation` : ''}
+              {detail ? ` · ${chartConfirmation}-bar confirmation` : ''}
+              {detail ? ` · ${SETUP_LABEL[chartMethod]}` : ''}
             </div>
             <h2>
               {row.symbol}
@@ -501,23 +559,52 @@ export function DetailDrawer({
         <div className="drawer__body">
           {detail && (
             <div className="drawer__toolbar">
-              <div className="segmented" role="group" aria-label="Marker mode">
-                <button
-                  className={pivotMode === 'external' ? 'is-active' : ''}
-                  onClick={() => setPivotMode('external')}
-                  aria-pressed={pivotMode === 'external'}
+              <div className="drawer__toolbar-group">
+                <div
+                  className="segmented"
+                  role="group"
+                  aria-label="Chart swing method"
                 >
-                  External swings
-                </button>
-                <button
-                  className={pivotMode === 'all' ? 'is-active' : ''}
-                  onClick={() => setPivotMode('all')}
-                  aria-pressed={pivotMode === 'all'}
+                  <button
+                    className={chartMethod === 'fractal' ? 'is-active' : ''}
+                    onClick={() => setChartMethod('fractal')}
+                    aria-pressed={chartMethod === 'fractal'}
+                    title="Fractal swings (k=2)"
+                  >
+                    Fractal
+                  </button>
+                  <button
+                    className={chartMethod === 'atr' ? 'is-active' : ''}
+                    onClick={() => setChartMethod('atr')}
+                    aria-pressed={chartMethod === 'atr'}
+                    title="ATR zigzag swings (14, 2×)"
+                  >
+                    ATR
+                  </button>
+                </div>
+                <div
+                  className="segmented"
+                  role="group"
+                  aria-label="Chart confirmation"
                 >
-                  All pivots
-                </button>
+                  {([1, 2] as Confirmation[]).map((item) => (
+                    <button
+                      key={item}
+                      className={chartConfirmation === item ? 'is-active' : ''}
+                      onClick={() => setConfirmationOverride(item)}
+                      aria-pressed={chartConfirmation === item}
+                      title={
+                        item === 1
+                          ? 'Confirm on the first close beyond the swing'
+                          : 'Require two consecutive closes beyond the swing'
+                      }
+                    >
+                      {item} candle{item === 2 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {detail.timeframe === 'day' && trades && (
+              {SHOW_TRADE_OVERLAY && detail.timeframe === 'day' && trades && (
                 <div className="segmented" role="group" aria-label="Backtest overlay">
                   <button
                     className={tradeMode === 'off' ? 'is-active' : ''}
@@ -561,28 +648,11 @@ export function DetailDrawer({
                     <i className="legend-dot legend-dot--target" />
                     2R target
                   </>
-                ) : tradeMode !== 'off' ? (
-                  <>
-                    <i className={`legend-dot legend-dot--${tradeMode}`} />
-                    {tradeMode === 'fractal' ? 'fractal entry' : 'ATR entry'}
-                    <i className="legend-dot legend-dot--win" />
-                    win
-                    <i className="legend-dot legend-dot--loss" />
-                    loss / other
-                  </>
-                ) : pivotMode === 'external' ? (
-                  <>
-                    <i className="legend-dot legend-dot--high" />
-                    HH / LH
-                    <i className="legend-dot legend-dot--low" />
-                    HL / LL
-                  </>
                 ) : (
                   <>
-                    <i className="legend-dot legend-dot--high" />
-                    swing high
-                    <i className="legend-dot legend-dot--low" />
-                    swing low
+                    <i className={`legend-dot legend-dot--${chartMethod}`} />
+                    {SETUP_LABEL[chartMethod]}
+                    <span>MSS flips · SL swing</span>
                   </>
                 )}
               </span>
@@ -648,6 +718,11 @@ export function DetailDrawer({
                   <small>{formatDate(focused.entryDate)}</small>
                 </div>
                 <div>
+                  <span>MSS flip</span>
+                  <strong className="num">{formatPrice(focused.signalLevel)}</strong>
+                  <small>{formatDate(focused.signalDate)}</small>
+                </div>
+                <div>
                   <span>Stop</span>
                   <strong className="num down">{formatPrice(focused.stop)}</strong>
                   <small>{focused.riskPct.toFixed(2)}% risk</small>
@@ -686,18 +761,65 @@ export function DetailDrawer({
                 </div>
               </div>
 
-              <p className="trade-focus__note">{reasonText(focused)}</p>
+              <p className="trade-focus__note">{reasonText(focused, activeMethod)}</p>
             </section>
           )}
 
           <div className="drawer__chart">
+            <button
+              className="chart-expand"
+              onClick={() => setChartFull(true)}
+              aria-label="Full screen chart"
+              title="Full screen"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="14"
+                height="14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 2H2v4M10 14h4v-4M14 6V2h-4M2 10v4h4" />
+              </svg>
+            </button>
             {loading && !detail && (
               <div className="chart-loading">
                 <span className="spinner" /> Computing structure…
               </div>
             )}
-            <div ref={chartRef} className="chart-canvas" />
+            {!chartFull && <div ref={chartRef} className="chart-canvas" />}
           </div>
+
+          {chartFull &&
+            createPortal(
+              <div className="chart-full" role="dialog" aria-modal="true" aria-label={`${row.symbol} chart, full screen`}>
+                <div className="chart-full__bar">
+                  <strong>{row.symbol}</strong>
+                  <span className="chart-full__name">{row.name}</span>
+                  <button
+                    className="icon-btn"
+                    onClick={() => {
+                      if (startFull) {
+                        onClose();
+                        return;
+                      }
+                      setChartFull(false);
+                    }}
+                    aria-label="Exit full screen"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="chart-full__body">
+                  <div ref={chartRef} className="chart-canvas" />
+                </div>
+              </div>,
+              document.body,
+            )}
 
           {detail && (
             <>
@@ -705,46 +827,46 @@ export function DetailDrawer({
                 <div className="stat">
                   <span className="stat__label">Last shift</span>
                   <span className="stat__value">
-                    {detail.lastEvent ? (
-                      <span className={`pill pill--${detail.lastEvent.direction}`}>
-                        {detail.lastEvent.direction === 'bullish' ? 'Bullish' : 'Bearish'}
+                    {currentEvent ? (
+                      <span className={`pill pill--${currentEvent.direction}`}>
+                        {currentEvent.direction === 'bullish' ? 'Bullish' : 'Bearish'}
                       </span>
                     ) : (
                       'None'
                     )}
                   </span>
                   <span className="stat__sub">
-                    {detail.barsSince === null
+                    {currentBarsSince === null
                       ? 'No confirmed shift in range'
-                      : detail.barsSince === 0
+                      : currentBarsSince === 0
                         ? 'Confirmed this bar'
-                        : `${detail.barsSince} ${detail.barsSince === 1 ? 'bar' : 'bars'} ago · ${formatDate(detail.lastEvent?.date)}`}
+                        : `${currentBarsSince} ${currentBarsSince === 1 ? 'bar' : 'bars'} ago · ${formatDate(currentEvent?.date)}`}
                   </span>
                 </div>
                 <div className="stat">
                   <span className="stat__label">Broken level</span>
                   <span className="stat__value num">
-                    {formatPrice(detail.lastEvent?.level)}
+                    {formatPrice(currentEvent?.level)}
                   </span>
                   <span className="stat__sub">
-                    close {formatPrice(detail.lastEvent?.close)} ·{' '}
-                    {formatPct(detail.lastEvent?.breakoutPct)} beyond
+                    close {formatPrice(currentEvent?.close)} ·{' '}
+                    {formatPct(currentEvent?.breakoutPct)} beyond
                   </span>
                 </div>
                 <div className="stat">
                   <span className="stat__label">Move since shift</span>
                   <span
                     className={`stat__value num ${
-                      detail.lastEvent
-                        ? row.close >= detail.lastEvent.close
+                      currentEvent
+                        ? row.close >= currentEvent.close
                           ? 'up'
                           : 'down'
                         : ''
                     }`}
                   >
                     {formatPct(
-                      detail.lastEvent
-                        ? (row.close / detail.lastEvent.close - 1) * 100
+                      currentEvent
+                        ? (row.close / currentEvent.close - 1) * 100
                         : null,
                     )}
                   </span>
@@ -755,16 +877,16 @@ export function DetailDrawer({
                 <div className="stat">
                   <span className="stat__label">Active swing</span>
                   <span className="stat__value num">
-                    {detail.activeHigh !== null && detail.activeLow !== null
-                      ? `${formatPrice(detail.activeLow)} – ${formatPrice(detail.activeHigh)}`
-                      : detail.activeHigh !== null
-                        ? `High ${formatPrice(detail.activeHigh)}`
-                        : detail.activeLow !== null
-                          ? `Low ${formatPrice(detail.activeLow)}`
+                    {currentHigh !== null && currentLow !== null
+                      ? `${formatPrice(currentLow)} – ${formatPrice(currentHigh)}`
+                      : currentHigh !== null
+                        ? `High ${formatPrice(currentHigh)}`
+                        : currentLow !== null
+                          ? `Low ${formatPrice(currentLow)}`
                           : '—'}
                   </span>
                   <span className="stat__sub">
-                    {detail.activeHigh === null || detail.activeLow === null
+                    {currentHigh === null || currentLow === null
                       ? 'One side already broken'
                       : 'Nearest confirmed low / high'}
                   </span>
@@ -802,10 +924,8 @@ export function DetailDrawer({
                 Detection uses the full 3-year series; the chart starts at a
                 6-month view.{' '}
                 {focused
-                  ? `Inspecting one ${SETUP_LABEL[activeMethod]} trade on daily bars. Use ← → to step through that setup, or switch to the other setup to compare the same episode.`
-                  : pivotMode === 'external'
-                    ? 'External swings use an ATR zigzag (2 × ATR 14), labelled against the previous swing of the same kind. Highs and lows alternate.'
-                    : 'Circles mark every confirmed fractal pivot (k=2).'}
+                  ? `Inspecting one ${SETUP_LABEL[activeMethod]} trade on daily bars. The MSS arrows are this setup’s own flips (1-bar confirmation), so the entry should sit on the bar right after its arrow.`
+                  : `Arrows are ${SETUP_LABEL[chartMethod]} MSS flips (${chartConfirmation}-bar confirmation). The SL marker is the swing ${chartStructure?.lastEvent?.direction === 'bearish' ? 'high' : 'low'} that backs the latest stop.`}
                 {detail.provisional &&
                   ' Today’s bar is still forming and is excluded from confirmation.'}
               </p>

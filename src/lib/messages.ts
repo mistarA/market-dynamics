@@ -7,6 +7,7 @@ import type {
   Row,
   Snapshot,
   SnapshotIndex,
+  SwingMethod,
   Timeframe,
 } from './types';
 
@@ -19,6 +20,7 @@ export type WorkerRequest =
       indexSlug: string;
       timeframe: Timeframe;
       confirmation: Confirmation;
+      method: SwingMethod;
       context: AnalysisContext;
     }
   | {
@@ -27,6 +29,7 @@ export type WorkerRequest =
       symbol: string;
       timeframe: Timeframe;
       confirmation: Confirmation;
+      method: SwingMethod;
       context: AnalysisContext;
     }
   | {

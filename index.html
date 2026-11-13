@@ -4,31 +4,36 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0d12" />
+    <meta name="theme-color" content="#f5efe3" />
     <meta
       name="description"
-      content="NSE index dashboard ranked by the recency of market structure shifts."
+      content="Indices ranked by how recently price broke market structure, with swing levels, move since the shift, and a six-month chart."
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <meta name="application-name" content="Market Structure" />
+    <meta name="apple-mobile-web-app-title" content="Market Structure" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Market Structure" />
+    <meta property="og:title" content="Market Structure" />
+    <meta
+      property="og:description"
+      content="Indices ranked by how recently price broke market structure, with swing levels and move since the shift."
+    />
+    <meta name="twitter:card" content="summary" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/apple-touch-icon.png"
     />
-    <title>MSS · Market Structure Shifts</title>
+    <title>Market Structure</title>
     <script>
       (() => {
         try {
           const stored = localStorage.getItem('mss-theme');
           const theme =
-            stored === 'light' || stored === 'dark'
-              ? stored
-              : window.matchMedia('(prefers-color-scheme: light)').matches
-                ? 'light'
-                : 'dark';
+            stored === 'light' || stored === 'dark' ? stored : 'light';
           document.documentElement.dataset.theme = theme;
         } catch {
-          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.dataset.theme = 'light';
         }
       })();
     </script>

@@ -17,6 +17,7 @@ import type {
   Snapshot,
   SnapshotIndex,
   SnapshotSymbol,
+  SwingMethod,
   Timeframe,
 } from '../lib/types';
 
@@ -95,6 +96,7 @@ function handleCompute(
   indexSlug: string,
   timeframe: Timeframe,
   confirmation: Confirmation,
+  method: SwingMethod,
   context: AnalysisContext,
 ) {
   if (!snapshot) throw new Error('Worker has no snapshot');
@@ -106,6 +108,7 @@ function handleCompute(
     indexSlug,
     timeframe,
     confirmation,
+    method,
     context.provisional ? 'p' : 'f',
   ].join('|');
 
@@ -131,6 +134,7 @@ function handleCompute(
       meta,
       timeframe,
       confirmation,
+      method,
       context,
       barsFor(symbol),
     );
@@ -147,6 +151,7 @@ function handleDetail(
   symbol: string,
   timeframe: Timeframe,
   confirmation: Confirmation,
+  method: SwingMethod,
   context: AnalysisContext,
 ) {
   if (!snapshot) throw new Error('Worker has no snapshot');
@@ -159,6 +164,7 @@ function handleDetail(
     meta,
     timeframe,
     confirmation,
+    method,
     context,
     barsFor(symbol),
   );
@@ -257,6 +263,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         message.indexSlug,
         message.timeframe,
         message.confirmation,
+        message.method,
         message.context,
       );
       return;
@@ -267,6 +274,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
         message.symbol,
         message.timeframe,
         message.confirmation,
+        message.method,
         message.context,
       );
       return;

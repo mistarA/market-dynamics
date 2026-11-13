@@ -93,6 +93,9 @@ export type MssEvent = {
    * the event, so a backtest never reads a swing that was confirmed later.
    */
   stopLevel: number | null;
+  /** Bar of the swing that provides the stop, when one was known. */
+  stopIdx: number | null;
+  stopDate: string | null;
 };
 
 export type Structure = {
@@ -153,6 +156,8 @@ export type Detail = {
   industry: string;
   timeframe: Timeframe;
   confirmation: Confirmation;
+  /** Swing detector that produced this structure. */
+  method: SwingMethod;
   bars: Bar[];
   events: MssEvent[];
   pivots: Pivot[];

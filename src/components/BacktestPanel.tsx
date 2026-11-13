@@ -181,7 +181,9 @@ function ScopeTable({ scope }: { scope: BacktestScope }) {
         <div>
           <h3>A/B result</h3>
           <p className="muted">
-            Same MSS flip entries; only the swing detector and its stop level change.
+            Each setup uses its own swing detector, so its MSS flips, entries and
+            stop levels all differ. Comparing both separates entry timing from
+            stop placement.
           </p>
         </div>
         <span className="bt-compare__sample">{scope.symbols} {symbolWord(scope.symbols)}</span>
@@ -229,7 +231,7 @@ function TradeTable({
       <table className="bt-trades">
         <thead>
           <tr>
-            <th>Entry</th>
+            <th>Entry / flip</th>
             <th>Side</th>
             <th className="num">Entry</th>
             <th className="num">Stop</th>
@@ -246,7 +248,12 @@ function TradeTable({
         <tbody>
           {trades.map((trade: BacktestTrade) => (
             <tr key={`${trade.entryDate}-${trade.direction}-${trade.entryIdx}`}>
-              <td className="num">{formatDate(trade.entryDate)}</td>
+              <td className="num">
+                {formatDate(trade.entryDate)}
+                <span className="bt-sub">
+                  flip {formatDate(trade.signalDate)} · {formatPrice(trade.signalLevel)}
+                </span>
+              </td>
               <td>
                 <span className={`pill pill--${trade.direction}`}>
                   {trade.direction === 'bullish' ? 'Long' : 'Short'}

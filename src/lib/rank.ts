@@ -1,5 +1,7 @@
 import { aggregate } from './aggregate';
 import { computeStructure } from './mss';
+import { findPivots } from './pivots';
+import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, findZigzagPivots } from './swings';
 import type {
   AnalysisContext,
   Bar,
@@ -10,6 +12,7 @@ import type {
   Row,
   RowStatus,
   SnapshotSymbol,
+  SwingMethod,
   Timeframe,
 } from './types';
 
@@ -45,14 +48,25 @@ export function analyse(
   meta: SnapshotSymbol,
   timeframe: Timeframe,
   confirmation: Confirmation,
+  method: SwingMethod,
   context: AnalysisContext,
   dailyBars?: Bar[],
 ): Analysis {
   const daily = dailyBars ?? tuplesToBars(meta.bars);
   const bars = aggregate(daily, timeframe);
+  const detectionBars = context.provisional ? bars.slice(0, -1) : bars;
+  const pivots =
+    method === 'fractal'
+      ? findPivots(detectionBars, 2)
+      : findZigzagPivots(
+          detectionBars,
+          EXTERNAL_ATR_MULTIPLE,
+          ATR_PERIOD,
+        );
   const structure = computeStructure(bars, {
     confirmation,
     dropLast: context.provisional,
+    pivots,
   });
 
   const last = bars.length ? bars[bars.length - 1] : null;
@@ -103,6 +117,7 @@ export function analyse(
     industry: meta.industry,
     timeframe,
     confirmation,
+    method,
     bars,
     events: structure.events,
     pivots: structure.pivots,
