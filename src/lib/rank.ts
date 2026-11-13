@@ -153,8 +153,19 @@ export function sortRows(rows: Row[], key: SortKey, direction: 'asc' | 'desc'): 
         a.symbol.localeCompare(b.symbol)
       );
     }
-    const field =
-      key === 'change' ? 'changePct' : key === 'since' ? 'sincePct' : 'close';
+if (key === 'since') {
+      const aligned = (r: Row) =>
+        r.sincePct === null ? null : r.direction === 'bullish' ? r.sincePct : -r.sincePct;
+      const aVal = aligned(a);
+      const bVal = aligned(b);
+      const aMissing = aVal === null;
+      const bMissing = bVal === null;
+      if (aMissing && bMissing) return a.symbol.localeCompare(b.symbol);
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+      return (aVal! - bVal!) * factor || a.symbol.localeCompare(b.symbol);
+    }
+    const field = key === 'change' ? 'changePct' : 'close';
     const aValue = a[field] ?? (factor === 1 ? Infinity : -Infinity);
     const bValue = b[field] ?? (factor === 1 ? Infinity : -Infinity);
     return (aValue - bValue) * factor || a.symbol.localeCompare(b.symbol);

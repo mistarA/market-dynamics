@@ -44,6 +44,16 @@ function pctText(value: number | null): string {
   return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 }
 
+function sinceClass(row: Row): string {
+  if (row.sincePct === null || row.sincePct === 0) return 'flat';
+  const aligned =
+    row.direction === 'bullish'
+      ? row.sincePct > 0
+      : row.sincePct < 0;
+  if (aligned) return 'right';
+  return row.sincePct > 0 ? 'up' : 'down';
+}
+
 function useNarrow(): boolean {
   const [narrow, setNarrow] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(NARROW).matches,
@@ -192,7 +202,7 @@ export function Table({
                     ? '—'
                     : `${row.changePct > 0 ? '+' : ''}${row.changePct.toFixed(2)}%`}
                 </td>
-                <td className={`col-since num ${row.sincePct === null ? 'flat' : row.sincePct > 0 ? 'up' : row.sincePct < 0 ? 'down' : 'flat'}`}>
+                <td className={`col-since num ${sinceClass(row)}`}>
                   {row.sincePct === null
                     ? '—'
                     : `${row.sincePct > 0 ? '+' : ''}${row.sincePct.toFixed(2)}%`}
@@ -324,13 +334,7 @@ function MobileRows({
                       <span>
                         since{' '}
                         <b
-                          className={`num ${
-                            row.sincePct > 0
-                              ? 'up'
-                              : row.sincePct < 0
-                                ? 'down'
-                                : 'flat'
-                          }`}
+                          className={`num ${sinceClass(row)}`}
                         >
                           {pctText(row.sincePct)}
                         </b>
