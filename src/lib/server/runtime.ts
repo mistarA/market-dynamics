@@ -13,6 +13,7 @@ export type Runtime = {
     results: string;
     eps: string;
     details: string;
+    delivery: string;
     index: (slug: string, version?: string) => string;
   };
 };
@@ -38,6 +39,7 @@ export function runtime(): Runtime {
       results: local ? 'data/cache/results.json' : 'snapshots/results.json',
       eps: local ? 'data/cache/eps.json' : 'snapshots/eps.json',
       details: local ? 'data/cache/details.json' : 'snapshots/details.json',
+      delivery: local ? 'data/cache/delivery.json' : 'snapshots/delivery.json',
       index: (slug: string, version?: string) => {
         const suffix = version ? `.${version}` : '';
         return local

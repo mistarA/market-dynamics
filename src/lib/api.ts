@@ -1,4 +1,5 @@
 import type {
+  DeliveryInfo,
   EpsInfo,
   IndexDataset,
   IndexInfo,
@@ -201,4 +202,24 @@ export async function fetchEps(
   );
 
   return Object.assign({}, ...parts) as Record<string, EpsInfo>;
+}
+
+/** Seven-day delivery vs intraday split for a batch of symbols. */
+export async function fetchDelivery(
+  symbols: string[],
+): Promise<Record<string, DeliveryInfo>> {
+  if (symbols.length === 0) return {};
+  try {
+    const response = await fetch(
+      `/api/delivery?symbols=${encodeURIComponent(symbols.join(','))}`,
+      { cache: 'no-store' },
+    );
+    if (!response.ok) return {};
+    const payload = (await response.json()) as {
+      delivery?: Record<string, DeliveryInfo>;
+    };
+    return payload.delivery ?? {};
+  } catch {
+    return {};
+  }
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { cleanIndustry, formatPrice } from '../lib/format';
 import { formatDateShort } from '../lib/date';
 import type { SortKey } from '../lib/rank';
-import type { EpsInfo, Row, ResultInfo } from '../lib/types';
+import type { DeliveryInfo, EpsInfo, Row, ResultInfo } from '../lib/types';
 import { IndicatorDialog } from './IndicatorDialog';
 import { Sparkline } from './Sparkline';
 import { Trajectory } from './Trajectory';
@@ -22,6 +22,8 @@ type Props = {
   results: Record<string, ResultInfo | null>;
   /** Quarterly EPS per symbol, loaded separately again. */
   eps: Record<string, EpsInfo>;
+  /** Seven-day delivery split per symbol. */
+  delivery: Record<string, DeliveryInfo>;
 };
 
 function sortIndicator(
@@ -144,6 +146,7 @@ export function Table({
   onChart,
   results,
   eps,
+  delivery,
 }: Props) {
   const narrow = useNarrow();
   if (narrow) {
@@ -155,6 +158,7 @@ export function Table({
         onChart={onChart}
         results={results}
         eps={eps}
+        delivery={delivery}
       />
     );
   }
@@ -192,9 +196,9 @@ export function Table({
             <th className="col-structure">Active swing</th>
             <th
               className="col-range"
-              title="52-week high/low with today's close, the latest quarterly EPS trend, and the last result date with its quarter end (plus the next meeting once announced)"
+              title="52-week range, quarterly EPS trend, last result date, 7-day delivery vs intraday split, and volume for the selected timeframe"
             >
-              Range · EPS · Qtr
+              Indicators
             </th>
             <th className="col-spark">6M</th>
             <th className="col-research" aria-label="Research" />
@@ -308,6 +312,7 @@ export function Table({
                     row={row}
                     info={results[row.symbol]}
                     eps={eps[row.symbol]}
+                    delivery={delivery[row.symbol]}
                   />
                 </td>
                 <td className="col-spark">
@@ -332,6 +337,7 @@ function MobileRows({
   onChart,
   results,
   eps,
+  delivery,
 }: {
   rows: Row[];
   selected: string | null;
@@ -339,6 +345,7 @@ function MobileRows({
   onChart: (symbol: string) => void;
   results: Record<string, ResultInfo | null>;
   eps: Record<string, EpsInfo>;
+  delivery: Record<string, DeliveryInfo>;
 }) {
   const [detailsSymbol, setDetailsSymbol] = useState<string | null>(null);
   const detailsRow = detailsSymbol
@@ -495,6 +502,7 @@ function MobileRows({
         row={detailsRow}
         info={results[detailsRow.symbol]}
         eps={eps[detailsRow.symbol]}
+        delivery={delivery[detailsRow.symbol]}
         onClose={() => setDetailsSymbol(null)}
       />
     )}

@@ -87,6 +87,11 @@ export function analyse(
   const spark = bars
     .slice(-SPARK_POINTS[timeframe])
     .map((bar) => round(bar.c, 2));
+  // Same window as the price spark, so the volume trend follows the selected
+  // timeframe (weekly/monthly bars carry summed volume).
+  const volumeSpark = bars
+    .slice(-SPARK_POINTS[timeframe])
+    .map((bar) => Math.round(bar.v));
 
   /**
    * 52-week range. Filter by date rather than bar count so this stays correct
@@ -130,6 +135,8 @@ export function analyse(
     activeHigh: structure.activeHigh,
     activeLow: structure.activeLow,
     spark,
+    volumeSpark,
+    timeframe,
     high52: high52 !== null ? round(high52, 2) : null,
     low52: low52 !== null ? round(low52, 2) : null,
     rangePos: rangePos !== null ? round(rangePos, 4) : null,

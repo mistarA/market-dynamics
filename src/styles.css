@@ -4290,3 +4290,93 @@ input[type='search']::placeholder {
 .research__section .research__hint {
   margin-bottom: 8px;
 }
+
+/* -------------------------------------------------- delivery / volume markers */
+
+.delivery,
+.volume {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.delivery__value {
+  font-size: 10.5px;
+  color: var(--text-soft);
+}
+
+.delivery__bars {
+  flex: none;
+  width: 56px;
+  height: 16px;
+  overflow: visible;
+}
+
+.delivery__intraday {
+  fill: var(--line-strong);
+}
+
+.delivery__delivered {
+  fill: var(--up);
+}
+
+.delivery--empty,
+.delivery--loading,
+.volume--empty {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.delivery--loading {
+  display: block;
+  height: 12px;
+}
+
+.delivery__pop-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.volume__bars {
+  flex: none;
+  width: 60px;
+  height: 16px;
+  overflow: visible;
+}
+
+.volume__bar {
+  fill: var(--line-strong);
+}
+
+.volume__bar--last {
+  fill: var(--accent);
+}
+
+.volume__delta {
+  font-size: 9px;
+}
+
+.mcard__range .delivery__bars {
+  width: 72px;
+  height: 18px;
+}
+
+.mcard__range .volume__bars {
+  width: 76px;
+  height: 18px;
+}
+
+.mcard__range .delivery__value {
+  font-size: 11.5px;
+}
+
+.mcard__range .volume__delta {
+  font-size: 10px;
+}

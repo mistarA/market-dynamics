@@ -5,6 +5,7 @@ import indexHandler from './api/index';
 import refreshHandler from './api/refresh';
 import resultsHandler from './api/results';
 import epsHandler from './api/eps';
+import deliveryHandler from './api/delivery';
 
 type Handler = (req: any, res: any) => void | Promise<void>;
 
@@ -21,6 +22,7 @@ function localApi(): Plugin {
     '/api/refresh': refreshHandler as Handler,
     '/api/results': resultsHandler as Handler,
     '/api/eps': epsHandler as Handler,
+    '/api/delivery': deliveryHandler as Handler,
   };
 
   return {

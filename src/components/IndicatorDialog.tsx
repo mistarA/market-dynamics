@@ -2,9 +2,15 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchResultDetail } from '../lib/api';
 import { useBackClose } from '../lib/backPress';
-import { formatDate, formatDateShort } from '../lib/date';
-import { formatPrice } from '../lib/format';
-import type { EpsInfo, ResultDetail, ResultInfo, Row } from '../lib/types';
+import { formatDate, formatDateShort, TIMEFRAME_LABEL } from '../lib/date';
+import { formatCount, formatPrice } from '../lib/format';
+import type {
+  DeliveryInfo,
+  EpsInfo,
+  ResultDetail,
+  ResultInfo,
+  Row,
+} from '../lib/types';
 import { FilingsList } from './FilingsList';
 import { RangeBar } from './RangeBar';
 
@@ -13,6 +19,7 @@ type Props = {
   row: Row;
   info?: ResultInfo | null;
   eps?: EpsInfo | null;
+  delivery?: DeliveryInfo | null;
   onClose: () => void;
 };
 
@@ -26,6 +33,7 @@ export function IndicatorDialog({
   row,
   info,
   eps,
+  delivery,
   onClose,
 }: Props) {
   const [detail, setDetail] = useState<ResultDetail | undefined>(undefined);
@@ -50,6 +58,8 @@ export function IndicatorDialog({
   }, [onClose]);
 
   const points = eps?.points ?? [];
+  const days = delivery?.days ?? [];
+  const volumes = row.volumeSpark;
   const latest = points.length ? points[points.length - 1].eps : null;
   const prior = points.length > 1 ? points[points.length - 2].eps : null;
   const delta =
@@ -167,6 +177,55 @@ export function IndicatorDialog({
               brackets. NSE lists board meetings only a few weeks ahead, so the
               next date appears once the company intimates the exchange.
             </p>
+          </section>
+
+          <section className="ind-section">
+            <h2>Delivery vs intraday · {days.length || 7} sessions</h2>
+            {days.length === 0 ? (
+              <p className="muted">No delivery data for this symbol.</p>
+            ) : (
+              <>
+                <ul className="ind-eps">
+                  {days.map((day) => (
+                    <li key={day.date}>
+                      <span>{formatDateShort(day.date)}</span>
+                      <b>
+                        {day.deliveryPct.toFixed(2)}% delivered /{' '}
+                        {day.intradayPct.toFixed(2)}% intraday
+                      </b>
+                    </li>
+                  ))}
+                </ul>
+                <p className="ind-note">
+                  Each day's delivered quantity as a share of traded quantity;
+                  the rest was squared off within the session. From the NSE
+                  daily bhavcopy.
+                </p>
+              </>
+            )}
+          </section>
+
+          <section className="ind-section">
+            <h2>Volume · {TIMEFRAME_LABEL[row.timeframe]}</h2>
+            {volumes.length < 2 ? (
+              <p className="muted">No volume history for this symbol.</p>
+            ) : (
+              <>
+                <ul className="ind-eps">
+                  {volumes.slice(-5).map((value, index) => (
+                    <li key={index}>
+                      <span>{index === 0 ? 'earlier' : `bar −${volumes.slice(-5).length - 1 - index}`}</span>
+                      <b>{formatCount(value)}</b>
+                    </li>
+                  ))}
+                </ul>
+                <p className="ind-note">
+                  The histogram uses the same {volumes.length}{' '}
+                  {TIMEFRAME_LABEL[row.timeframe].toLowerCase()} bars as the
+                  price sparkline. Weekly and monthly bars sum their sessions.
+                </p>
+              </>
+            )}
           </section>
 
           <section className="ind-section">

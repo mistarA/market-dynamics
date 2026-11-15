@@ -144,6 +144,10 @@ export type Row = {
   activeHigh: number | null;
   activeLow: number | null;
   spark: number[];
+  /** Timeframe the row was aggregated to (drives the volume trend label). */
+  timeframe: Timeframe;
+  /** Volumes for the same bars as `spark`, so it follows the selected timeframe. */
+  volumeSpark: number[];
   /** Highest high and lowest low across the trailing year. */
   high52: number | null;
   low52: number | null;
@@ -336,4 +340,22 @@ export type Filing = {
 export type ResultDetail = {
   summary: ResultSummary | null;
   filings: Filing[];
+};
+
+/** One trading day's delivery split, from NSE's daily bhavcopy. */
+export type DeliveryDay = {
+  /** Trading date, ISO. */
+  date: string;
+  /** Delivered quantity as a percentage of total traded quantity. */
+  deliveryPct: number;
+  /** The remainder: volume squared off within the day. */
+  intradayPct: number;
+  deliveryQty: number;
+  totalQty: number;
+  trades: number;
+};
+
+/** Last seven trading days, oldest first. */
+export type DeliveryInfo = {
+  days: DeliveryDay[];
 };

@@ -1,7 +1,14 @@
-import type { EpsInfo, ResultInfo, Row } from '../lib/types';
+import type {
+  DeliveryInfo,
+  EpsInfo,
+  ResultInfo,
+  Row,
+} from '../lib/types';
+import { DeliveryMarker } from './DeliveryMarker';
 import { EpsTrend } from './EpsTrend';
 import { RangeBar } from './RangeBar';
 import { ResultTrack } from './ResultTrack';
+import { VolumeTrend } from './VolumeTrend';
 
 type Props = {
   row: Row;
@@ -9,6 +16,8 @@ type Props = {
   info?: ResultInfo | null;
   /** Quarterly EPS, loaded after the dates. */
   eps?: EpsInfo | null;
+  /** Seven-day delivery split, loaded separately. */
+  delivery?: DeliveryInfo | null;
   /** On mobile the whole block opens the details dialog. */
   onActivate?: () => void;
 };
@@ -24,7 +33,7 @@ type Props = {
  * visible without one. When `onActivate` is supplied (mobile) the entire
  * block is one tap target, so there is no separate "Details" button.
  */
-export function Trajectory({ row, info, eps, onActivate }: Props) {
+export function Trajectory({ row, info, eps, delivery, onActivate }: Props) {
   const tappable = Boolean(onActivate);
 
   return (
@@ -64,6 +73,14 @@ export function Trajectory({ row, info, eps, onActivate }: Props) {
       <div className="traj__row">
         <span className="traj__label">Qtr</span>
         <ResultTrack symbol={row.symbol} info={info} />
+      </div>
+      <div className="traj__row">
+        <span className="traj__label">DEL</span>
+        <DeliveryMarker info={delivery} />
+      </div>
+      <div className="traj__row">
+        <span className="traj__label">Vol</span>
+        <VolumeTrend values={row.volumeSpark} timeframe={row.timeframe} />
       </div>
     </div>
   );

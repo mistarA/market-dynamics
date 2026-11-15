@@ -6,6 +6,7 @@ import { PerfOverlay } from './components/PerfOverlay';
 import { ResearchPage } from './components/ResearchPage';
 import { Table } from './components/Table';
 import {
+  fetchDelivery,
   fetchEps,
   fetchIndexDataset,
   fetchResults,
@@ -41,6 +42,7 @@ import type {
   Direction,
   IndexDataset,
   IndexInfo,
+  DeliveryInfo,
   EpsInfo,
   ResultInfo,
   Row,
@@ -252,12 +254,16 @@ export default function App() {
   const [results, setResults] = useState<Record<string, ResultInfo | null>>({});
   /** Quarterly EPS trends per symbol, fetched separately from the dates. */
   const [eps, setEps] = useState<Record<string, EpsInfo>>({});
+  /** Seven-day delivery vs intraday split, fetched once per index load. */
+  const [delivery, setDelivery] = useState<Record<string, DeliveryInfo>>({});
 
   const clientRef = useRef<AnalysisClient | null>(null);
   /** Symbols already requested from /api/results, so a failure cannot loop. */
   const resultsAsked = useRef<Set<string>>(new Set());
   /** Same guard for /api/eps, which is slower because it parses XBRL. */
   const epsAsked = useRef<Set<string>>(new Set());
+  /** Same guard for /api/delivery (seven bhavcopy files for all symbols). */
+  const deliveryAsked = useRef<Set<string>>(new Set());
   const firstTableRef = useRef(false);
   const tabsWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -618,6 +624,25 @@ export default function App() {
     };
   }, [rows, eps]);
 
+  // Delivery percentages come from seven daily bhavcopy files, which cover the
+  // whole NSE universe in one build.
+  useEffect(() => {
+    const asked = deliveryAsked.current;
+    const missing = [...new Set(rows.map((row) => row.symbol))].filter(
+      (symbol) => !asked.has(symbol),
+    );
+    if (missing.length === 0) return;
+    for (const symbol of missing) asked.add(symbol);
+    let cancelled = false;
+    void fetchDelivery(missing).then((map) => {
+      if (cancelled) return;
+      setDelivery((previous) => ({ ...previous, ...map }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, delivery]);
+
   const handleSelectSymbol = (symbol: string) => {
     setInspectTrade(null);
     setChartOnly(false);
@@ -762,8 +787,10 @@ export default function App() {
     // Result dates live outside the snapshot, so re-ask for them too.
     resultsAsked.current.clear();
     epsAsked.current.clear();
+    deliveryAsked.current.clear();
     setResults({});
     setEps({});
+    setDelivery({});
     const start = now();
 
     try {
@@ -1274,6 +1301,7 @@ export default function App() {
                 onChart={handleSelectChart}
                 results={results}
                 eps={eps}
+                delivery={delivery}
               />
             )}
 
@@ -1291,11 +1319,12 @@ export default function App() {
                 {formatDateTime(snapshot.generatedAt)}
               </span>
               <span>
-                Range · EPS · Qtr: the dot is today’s close inside the 52-week
-                low–high; EPS is the last reported quarter with its four-quarter
-                trend; Qtr is the last filing date with that quarter’s end in
-                brackets, and a centre dot adds the next meeting once NSE
-                announces it.
+                Indicators: 52W is today’s close inside the year’s low–high;
+                EPS is the latest quarter with its four-quarter trend; Qtr is
+                the last filing date with that quarter’s end in brackets (a
+                centre dot adds the next meeting once announced); DEL is seven
+                sessions of delivered vs intraday volume; Vol is the traded
+                quantity for the selected timeframe.
               </span>
             </footer>
           </section>
