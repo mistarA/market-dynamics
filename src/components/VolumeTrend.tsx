@@ -11,9 +11,14 @@ type Props = {
 
 const W = 60;
 const H = 16;
+const UNIT: Record<Timeframe, string> = {
+  day: 'day',
+  week: 'week',
+  month: 'month',
+};
 
 /**
- * Volume histogram over the same window as the price sparkline.
+ * Volume histogram: one bar per session, taller means more shares traded.
  *
  * `values` comes from the already-aggregated bars, so switching to weekly or
  * monthly automatically shows summed volume for those periods.
@@ -29,7 +34,6 @@ export function VolumeTrend({ values, timeframe }: Props) {
   const max = Math.max(...values) || 1;
   const latest = values[values.length - 1];
   const prior = values[values.length - 2];
-  const delta = prior > 0 ? (latest / prior - 1) * 100 : null;
   const step = W / values.length;
   const barWidth = Math.max(0.8, step - 0.6);
 
@@ -44,7 +48,7 @@ export function VolumeTrend({ values, timeframe }: Props) {
       tabIndex={0}
     >
       <svg
-        className="volume__bars"
+        className="volume__spark"
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         aria-hidden="true"
@@ -67,6 +71,7 @@ export function VolumeTrend({ values, timeframe }: Props) {
           );
         })}
       </svg>
+
       <HoverPop
         anchor={anchor}
         onHold={cancelHide}
@@ -75,18 +80,17 @@ export function VolumeTrend({ values, timeframe }: Props) {
       >
         <strong>Volume · {TIMEFRAME_LABEL[timeframe]}</strong>
         <p>
-          {values.length} {TIMEFRAME_LABEL[timeframe].toLowerCase()} bars, same
-          window as the price sparkline. Weekly and monthly bars are the sum of
-          their sessions, not an average.
+          Each bar is one {UNIT[timeframe]}’s traded shares — taller means more
+          volume. Bars are scaled to the busiest {UNIT[timeframe]} shown, so
+          this shows the shape of activity, not absolute share counts.
         </p>
         <p className="muted">
-          Latest {formatCount(latest)} · previous {formatCount(prior)}
-          {delta !== null
-            ? ` · ${delta >= 0 ? 'up' : 'down'} ${Math.abs(delta).toFixed(1)}%`
-            : ''}
+          Latest {formatCount(latest)} · previous {formatCount(prior)}. Weekly
+          and monthly bars add up every session in that period.
         </p>
         <span className="hover-pop__source">
-          Traded quantity from the NSE charting snapshot.
+          {values.length} {TIMEFRAME_LABEL[timeframe].toLowerCase()} bars · NSE
+          charting snapshot.
         </span>
       </HoverPop>
     </span>

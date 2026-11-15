@@ -8,15 +8,14 @@ type Props = {
   info?: DeliveryInfo | null;
 };
 
+const W = 56;
 const H = 16;
-const SLOT = 8;
-const BAR = 6;
 
 /**
- * Seven trading days of delivery vs intraday volume.
+ * Seven trading days of delivery share, drawn as a line rather than bars.
  *
- * Each column is one session: the filled portion is the quantity taken to
- * demat (DELIV_QTY / TTL_TRD_QNTY) and the remainder was squared off intraday.
+ * Each point is DELIV_QTY / TTL_TRD_QNTY for that session; the dashed midline
+ * is 50%, so a point above it means more volume was delivered than squared off.
  */
 export function DeliveryMarker({ info }: Props) {
   const { ref, anchor, show, hide, cancelHide, dismiss } =
@@ -34,7 +33,15 @@ export function DeliveryMarker({ info }: Props) {
   const latest = days[days.length - 1].deliveryPct;
   const average =
     days.reduce((total, day) => total + day.deliveryPct, 0) / days.length;
-  const width = days.length * SLOT;
+  const points = days.map((day, index) => {
+    const x = days.length === 1 ? W / 2 : (index / (days.length - 1)) * W;
+    const y = H - (day.deliveryPct / 100) * H;
+    return [x, y] as const;
+  });
+  const polyline = points
+    .map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`)
+    .join(' ');
+  const [lastX, lastY] = points[points.length - 1];
 
   return (
     <span
@@ -48,34 +55,34 @@ export function DeliveryMarker({ info }: Props) {
     >
       <span className="delivery__value">{Math.round(latest)}%</span>
       <svg
-        className="delivery__bars"
-        viewBox={`0 0 ${width} ${H}`}
+        className="delivery__spark"
+        viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        {days.map((day, index) => {
-          const filled = (day.deliveryPct / 100) * H;
-          return (
-            <g key={day.date}>
-              <rect
-                className="delivery__intraday"
-                x={index * SLOT}
-                y={0}
-                width={BAR}
-                height={H}
-                rx={1}
-              />
-              <rect
-                className="delivery__delivered"
-                x={index * SLOT}
-                y={H - filled}
-                width={BAR}
-                height={filled}
-                rx={1}
-              />
-            </g>
-          );
-        })}
+        <rect
+          className="delivery__above"
+          x={0}
+          y={0}
+          width={W}
+          height={H / 2}
+        />
+        <polyline
+          className="delivery__line"
+          points={polyline}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* Drawn last so the 50% reference is never hidden by the data line. */}
+        <line
+          className="delivery__midline"
+          x1={0}
+          y1={H / 2}
+          x2={W}
+          y2={H / 2}
+          vectorEffect="non-scaling-stroke"
+        />
+        <circle className="delivery__dot" cx={lastX} cy={lastY} r={1.8} />
       </svg>
 
       <HoverPop
@@ -86,8 +93,9 @@ export function DeliveryMarker({ info }: Props) {
       >
         <strong>Delivery vs intraday · {days.length} sessions</strong>
         <p>
-          Each bar is one trading day. Filled = shares delivered to demat;
-          the remainder was squared off intraday. Latest {latest.toFixed(2)}%,
+          The line is each session’s delivered share of traded quantity. The
+          shaded half and dashed line mark 50% — above it more shares went to
+          demat than were squared off intraday. Latest {latest.toFixed(2)}%,
           seven-day average {average.toFixed(2)}%.
         </p>
         {days.map((day) => (

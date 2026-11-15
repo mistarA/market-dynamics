@@ -3006,6 +3006,14 @@ input[type='search']::placeholder {
     overscroll-behavior-y: contain;
   }
 
+  /* The panel frame sat ~1px outside each rounded card, making a double
+     outline. Cards are the surfaces now, so drop it. */
+  .panel {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
   /* -- mobile stock cards */
 
   .mcards {
@@ -3716,12 +3724,12 @@ input[type='search']::placeholder {
   font-size: 10px;
 }
 
-.col-delivery .delivery__bars {
+.col-delivery .delivery__spark {
   width: 44px;
   height: 15px;
 }
 
-.col-volume .volume__bars {
+.col-volume .volume__spark {
   width: 56px;
   height: 15px;
 }
@@ -4337,19 +4345,34 @@ input[type='search']::placeholder {
   color: var(--text-soft);
 }
 
-.delivery__bars {
+.delivery__spark {
   flex: none;
   width: 56px;
   height: 16px;
   overflow: visible;
 }
 
-.delivery__intraday {
-  fill: var(--line-strong);
+/* The shaded top half plus a dashed boundary make 50% unmistakable even when
+   the delivery line itself sits near it. */
+.delivery__above {
+  fill: color-mix(in srgb, var(--warm) 11%, transparent);
 }
 
-.delivery__delivered {
-  fill: var(--up);
+.delivery__midline {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 3;
+  opacity: 1;
+}
+
+/* Amber, not green: delivery is participation, not a bullish signal. */
+.delivery__line {
+  stroke: var(--warm);
+  stroke-width: 1.5;
+}
+
+.delivery__dot {
+  fill: var(--warm);
 }
 
 .delivery--empty,
@@ -4372,7 +4395,7 @@ input[type='search']::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
-.volume__bars {
+.volume__spark {
   flex: none;
   width: 60px;
   height: 16px;
@@ -4380,19 +4403,21 @@ input[type='search']::placeholder {
 }
 
 .volume__bar {
-  fill: var(--line-strong);
+  fill: var(--muted);
+  opacity: 0.75;
 }
 
 .volume__bar--last {
   fill: var(--accent);
+  opacity: 1;
 }
 
-.mcard__range .delivery__bars {
+.mcard__range .delivery__spark {
   width: 72px;
   height: 18px;
 }
 
-.mcard__range .volume__bars {
+.mcard__range .volume__spark {
   width: 76px;
   height: 18px;
 }
@@ -4429,12 +4454,12 @@ input[type='search']::placeholder {
   font-size: 8.5px;
 }
 
-.traj__pair .delivery__bars {
+.traj__pair .delivery__spark {
   width: 44px;
   height: 15px;
 }
 
-.traj__pair .volume__bars {
+.traj__pair .volume__spark {
   width: 44px;
   height: 15px;
 }
