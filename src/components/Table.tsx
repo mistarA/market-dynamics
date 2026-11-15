@@ -64,12 +64,12 @@ function sinceClass(row: Row): string {
 function ResearchLink({
   symbol,
   className,
-  compass = false,
+  book = false,
 }: {
   symbol: string;
   className: string;
-  /** Mobile cards use a compass; the desktop trailing link keeps the external arrow. */
-  compass?: boolean;
+  /** Mobile cards use a book (read the research); desktop keeps the external arrow. */
+  book?: boolean;
 }) {
   return (
     <a
@@ -80,7 +80,7 @@ function ResearchLink({
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      {compass ? (
+      {book ? (
         <svg
           viewBox="0 0 16 16"
           width="15"
@@ -92,8 +92,8 @@ function ResearchLink({
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <circle cx="8" cy="8" r="6.2" />
-          <path d="m10.4 5.6-1.4 3.4-3.4 1.4 1.4-3.4z" />
+          <path d="M8 4.4C6.5 3.2 4.6 2.8 2.4 3v9.1c2.2-.2 4.1.2 5.6 1.4 1.5-1.2 3.4-1.6 5.6-1.4V3c-2.2-.2-4.1.2-5.6 1.4z" />
+          <path d="M8 4.4v9.1" />
         </svg>
       ) : (
         <svg
@@ -470,7 +470,7 @@ function MobileRows({
                 <ResearchLink
                   symbol={row.symbol}
                   className="mcard__chart mcard__research"
-                  compass
+                  book
                 />
               </div>
             </div>
