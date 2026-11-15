@@ -67,13 +67,6 @@ export function VolumeTrend({ values, timeframe }: Props) {
           );
         })}
       </svg>
-      {delta !== null && (
-        <span className={delta >= 0 ? 'volume__delta up' : 'volume__delta down'}>
-          {delta >= 0 ? '+' : ''}
-          {delta.toFixed(0)}%
-        </span>
-      )}
-
       <HoverPop
         anchor={anchor}
         onHold={cancelHide}

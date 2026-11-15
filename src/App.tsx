@@ -596,15 +596,16 @@ export default function App() {
     );
     if (missing.length === 0) return;
     for (const symbol of missing) asked.add(symbol);
-    let cancelled = false;
+    // No cancellation: a rows change while this is in flight must not discard
+    // the result, since the symbols are already marked as asked.
     void fetchResults(missing).then((map) => {
-      if (cancelled) return;
+      if (Object.keys(map).length === 0) {
+        for (const symbol of missing) asked.delete(symbol);
+        return;
+      }
       setResults((previous) => ({ ...previous, ...map }));
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [rows, results]);
+  }, [rows]);
 
   // EPS needs the XBRL behind each filing, so it lands after the dates.
   useEffect(() => {
@@ -614,15 +615,14 @@ export default function App() {
     );
     if (missing.length === 0) return;
     for (const symbol of missing) asked.add(symbol);
-    let cancelled = false;
     void fetchEps(missing).then((map) => {
-      if (cancelled) return;
+      if (Object.keys(map).length === 0) {
+        for (const symbol of missing) asked.delete(symbol);
+        return;
+      }
       setEps((previous) => ({ ...previous, ...map }));
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [rows, eps]);
+  }, [rows]);
 
   // Delivery percentages come from seven daily bhavcopy files, which cover the
   // whole NSE universe in one build.
@@ -633,15 +633,14 @@ export default function App() {
     );
     if (missing.length === 0) return;
     for (const symbol of missing) asked.add(symbol);
-    let cancelled = false;
     void fetchDelivery(missing).then((map) => {
-      if (cancelled) return;
+      if (Object.keys(map).length === 0) {
+        for (const symbol of missing) asked.delete(symbol);
+        return;
+      }
       setDelivery((previous) => ({ ...previous, ...map }));
     });
-    return () => {
-      cancelled = true;
-    };
-  }, [rows, delivery]);
+  }, [rows]);
 
   const handleSelectSymbol = (symbol: string) => {
     setInspectTrade(null);
@@ -1319,12 +1318,13 @@ export default function App() {
                 {formatDateTime(snapshot.generatedAt)}
               </span>
               <span>
-                Indicators: 52W is today’s close inside the year’s low–high;
-                EPS is the latest quarter with its four-quarter trend; Qtr is
-                the last filing date with that quarter’s end in brackets (a
-                centre dot adds the next meeting once announced); DEL is seven
-                sessions of delivered vs intraday volume; Vol is the traded
-                quantity for the selected timeframe.
+                52W is today’s close inside the year’s low–high; EPS is the
+                latest quarter with its four-quarter trend; Qtr is the last
+                filing date with that quarter’s end in brackets (a centre dot
+                adds the next meeting once announced); DEL is seven sessions of
+                delivered vs intraday volume; Vol is traded quantity for the
+                selected timeframe. On wide screens DEL and Vol have their own
+                columns.
               </span>
             </footer>
           </section>

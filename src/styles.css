@@ -919,7 +919,7 @@ input[type='search']::placeholder {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: 9px 12px;
+  padding: 9px 8px;
   text-align: left;
   font-size: 10.5px;
   font-weight: 600;
@@ -945,7 +945,7 @@ input[type='search']::placeholder {
 }
 
 .grid tbody td {
-  padding: 10px 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -976,11 +976,11 @@ input[type='search']::placeholder {
 }
 
 .col-stock {
-  min-width: 200px;
+  min-width: 190px;
 }
 
 .col-shift {
-  min-width: 172px;
+  min-width: 165px;
 }
 
 .col-level,
@@ -993,7 +993,7 @@ input[type='search']::placeholder {
 }
 
 .col-structure {
-  min-width: 108px;
+  min-width: 100px;
 }
 
 .col-spark {
@@ -1172,7 +1172,7 @@ input[type='search']::placeholder {
 
 .spark {
   display: block;
-  width: 48px;
+  width: 40px;
   height: 26px;
   opacity: 0.85;
 }
@@ -3695,12 +3695,40 @@ input[type='search']::placeholder {
 /* -------------------------------------------------- range · eps · results */
 
 .col-range {
-  width: 212px;
+  width: 200px;
+}
+
+/* Delivery and volume are dedicated web columns; the indicator cell keeps
+   only 52W / EPS / Qtr. */
+.col-delivery {
+  width: 96px;
+}
+
+.col-volume {
+  width: 76px;
+}
+
+.col-delivery .delivery {
+  gap: 4px;
+}
+
+.col-delivery .delivery__value {
+  font-size: 10px;
+}
+
+.col-delivery .delivery__bars {
+  width: 44px;
+  height: 15px;
+}
+
+.col-volume .volume__bars {
+  width: 56px;
+  height: 15px;
 }
 
 /* The 52-week bar takes the space the long sparkline used to hold. */
 .col-spark {
-  width: 64px;
+  width: 56px;
 }
 
 .traj {
@@ -4359,10 +4387,6 @@ input[type='search']::placeholder {
   fill: var(--accent);
 }
 
-.volume__delta {
-  font-size: 9px;
-}
-
 .mcard__range .delivery__bars {
   width: 72px;
   height: 18px;
@@ -4373,10 +4397,52 @@ input[type='search']::placeholder {
   height: 18px;
 }
 
-.mcard__range .delivery__value {
-  font-size: 11.5px;
+/* -------------------------------------------------- compact mobile pairs */
+
+/* EPS/DEL and QTR/VOL share a row on mobile so the card stays short. */
+.traj__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
 }
 
-.mcard__range .volume__delta {
-  font-size: 10px;
+.traj__pair .traj__row {
+  gap: 5px;
+  min-width: 0;
+}
+
+.traj__pair .traj__label {
+  width: 16px;
+  font-size: 8.5px;
+}
+
+.traj__pair .eps__spark {
+  width: 36px;
+}
+
+.traj__pair .eps__value {
+  font-size: 10.5px;
+}
+
+.traj__pair .eps__delta {
+  font-size: 8.5px;
+}
+
+.traj__pair .delivery__bars {
+  width: 44px;
+  height: 15px;
+}
+
+.traj__pair .volume__bars {
+  width: 44px;
+  height: 15px;
+}
+
+.traj__pair .delivery__value {
+  font-size: 10.5px;
+}
+
+.traj__pair .result__line {
+  font-size: 9.5px;
 }

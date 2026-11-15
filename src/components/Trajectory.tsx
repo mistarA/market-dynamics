@@ -20,21 +20,64 @@ type Props = {
   delivery?: DeliveryInfo | null;
   /** On mobile the whole block opens the details dialog. */
   onActivate?: () => void;
+  /** Mobile pairs EPS/DEL and QTR/VOL into two columns to save height. */
+  compact?: boolean;
+  /** Web shows DEL/VOL in their own columns, so its indicator cell has three rows. */
+  includeParticipation?: boolean;
 };
 
 /**
- * The three research signals for one stock, stacked in a single cell.
+ * The five research signals for one stock in a single cell.
  *
  *   52W  where today sits inside the year's high–low
  *   EPS  the latest quarter and its four-quarter trend
  *   Qtr  the last filed result and the next board meeting
+ *   DEL  seven sessions of delivered vs intraday volume
+ *   Vol  traded quantity for the selected timeframe
  *
- * Each line explains itself on hover; the label column keeps the meaning
- * visible without one. When `onActivate` is supplied (mobile) the entire
- * block is one tap target, so there is no separate "Details" button.
+ * Desktop stacks all five; mobile keeps 52W full width and pairs the rest.
  */
-export function Trajectory({ row, info, eps, delivery, onActivate }: Props) {
+export function Trajectory({
+  row,
+  info,
+  eps,
+  delivery,
+  onActivate,
+  compact = false,
+  includeParticipation = true,
+}: Props) {
   const tappable = Boolean(onActivate);
+
+  const rangeLine = (
+    <div className="traj__row">
+      <span className="traj__label">52W</span>
+      <RangeBar low={row.low52} high={row.high52} value={row.close} />
+    </div>
+  );
+  const epsLine = (
+    <div className="traj__row">
+      <span className="traj__label">EPS</span>
+      <EpsTrend info={eps} />
+    </div>
+  );
+  const qtrLine = (
+    <div className="traj__row">
+      <span className="traj__label">Qtr</span>
+      <ResultTrack symbol={row.symbol} info={info} />
+    </div>
+  );
+  const delLine = includeParticipation ? (
+    <div className="traj__row">
+      <span className="traj__label">DEL</span>
+      <DeliveryMarker info={delivery} />
+    </div>
+  ) : null;
+  const volLine = includeParticipation ? (
+    <div className="traj__row">
+      <span className="traj__label">Vol</span>
+      <VolumeTrend values={row.volumeSpark} timeframe={row.timeframe} />
+    </div>
+  ) : null;
 
   return (
     <div
@@ -62,26 +105,26 @@ export function Trajectory({ row, info, eps, delivery, onActivate }: Props) {
           : undefined
       }
     >
-      <div className="traj__row">
-        <span className="traj__label">52W</span>
-        <RangeBar low={row.low52} high={row.high52} value={row.close} />
-      </div>
-      <div className="traj__row">
-        <span className="traj__label">EPS</span>
-        <EpsTrend info={eps} />
-      </div>
-      <div className="traj__row">
-        <span className="traj__label">Qtr</span>
-        <ResultTrack symbol={row.symbol} info={info} />
-      </div>
-      <div className="traj__row">
-        <span className="traj__label">DEL</span>
-        <DeliveryMarker info={delivery} />
-      </div>
-      <div className="traj__row">
-        <span className="traj__label">Vol</span>
-        <VolumeTrend values={row.volumeSpark} timeframe={row.timeframe} />
-      </div>
+      {rangeLine}
+      {compact ? (
+        <>
+          <div className="traj__pair">
+            {epsLine}
+            {delLine}
+          </div>
+          <div className="traj__pair">
+            {qtrLine}
+            {volLine}
+          </div>
+        </>
+      ) : (
+        <>
+          {epsLine}
+          {qtrLine}
+          {delLine}
+          {volLine}
+        </>
+      )}
     </div>
   );
 }

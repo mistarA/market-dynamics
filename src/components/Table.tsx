@@ -4,8 +4,10 @@ import { formatDateShort } from '../lib/date';
 import type { SortKey } from '../lib/rank';
 import type { DeliveryInfo, EpsInfo, Row, ResultInfo } from '../lib/types';
 import { IndicatorDialog } from './IndicatorDialog';
+import { DeliveryMarker } from './DeliveryMarker';
 import { Sparkline } from './Sparkline';
 import { Trajectory } from './Trajectory';
+import { VolumeTrend } from './VolumeTrend';
 
 /** Cards replace the table below this width; keep the breakpoint in sync with CSS. */
 const NARROW = '(max-width: 620px)';
@@ -196,9 +198,21 @@ export function Table({
             <th className="col-structure">Active swing</th>
             <th
               className="col-range"
-              title="52-week range, quarterly EPS trend, last result date, 7-day delivery vs intraday split, and volume for the selected timeframe"
+              title="52-week range, quarterly EPS trend, and the last result date with the quarter it covers"
             >
               Indicators
+            </th>
+            <th
+              className="col-delivery"
+              title="Last seven sessions: delivered to demat vs squared off intraday"
+            >
+              Delivery
+            </th>
+            <th
+              className="col-volume"
+              title="Traded volume for the selected timeframe"
+            >
+              Volume
             </th>
             <th className="col-spark">6M</th>
             <th className="col-research" aria-label="Research" />
@@ -312,7 +326,16 @@ export function Table({
                     row={row}
                     info={results[row.symbol]}
                     eps={eps[row.symbol]}
-                    delivery={delivery[row.symbol]}
+                    includeParticipation={false}
+                  />
+                </td>
+                <td className="col-delivery">
+                  <DeliveryMarker info={delivery[row.symbol]} />
+                </td>
+                <td className="col-volume">
+                  <VolumeTrend
+                    values={row.volumeSpark}
+                    timeframe={row.timeframe}
                   />
                 </td>
                 <td className="col-spark">
@@ -488,7 +511,9 @@ function MobileRows({
                   row={row}
                   info={results[row.symbol]}
                   eps={eps[row.symbol]}
+                  delivery={delivery[row.symbol]}
                   onActivate={() => setDetailsSymbol(row.symbol)}
+                  compact
                 />
               </div>
             )}
