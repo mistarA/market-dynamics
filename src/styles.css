@@ -662,6 +662,120 @@ a {
   border-radius: 3px;
 }
 
+/* ------------------------------------------- desktop filter/sort dropdowns */
+
+.dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.dropdown__trigger:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.dropdown__trigger.is-active {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.dropdown__caret {
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.dropdown__trigger .controls__filters-sum {
+  display: inline;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.dropdown__panel {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 40;
+  min-width: 240px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-md);
+}
+
+.dropdown__panel--right {
+  left: auto;
+  right: 0;
+}
+
+.dropdown__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dropdown__group--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dropdown__label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.044em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.controls .dropdown__seg button {
+  flex: 1 1 0;
+}
+
+.dropdown__options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdown__options button {
+  text-align: left;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.dropdown__options button:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.dropdown__options button.is-active {
+  color: var(--text);
+  font-weight: 600;
+  background: var(--surface-soft);
+}
+
 .controls__search {
   margin-left: auto;
 }
@@ -1270,17 +1384,26 @@ input[type='search']::placeholder {
 
 .drawer__toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 12px;
   margin-bottom: 10px;
+  flex-wrap: wrap;
 }
 
 .drawer__toolbar-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.drawer__toolbar-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.044em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .drawer__toolbar .segmented {
@@ -1381,13 +1504,20 @@ input[type='search']::placeholder {
 }
 
 .chart-full__name {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 11.5px;
   color: var(--muted);
+}
+
+.chart-full__controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .chart-full__bar .icon-btn {
@@ -2798,8 +2928,21 @@ input[type='search']::placeholder {
   /* Filters and sort live in the bottom dock on phones. */
   .controls__filters,
   .controls__chips,
+  .controls__dropdown,
   .sheet__sort {
     display: none;
+  }
+
+  /* Compact full-screen chart toolbar on phones. */
+  .chart-full__controls {
+    gap: 4px;
+  }
+  .chart-full__controls .segmented button {
+    padding: 3px 7px;
+    font-size: 10.5px;
+  }
+  .chart-full__bar {
+    gap: 6px;
   }
 
   /* Market status and Refresh move out of the phone top bar. */

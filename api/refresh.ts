@@ -7,9 +7,9 @@ import type { CatalogueCache } from '../src/lib/server/catalogue';
 /**
  * Rebuild the core snapshot from the NSE charting API and publish it to Blob.
  *
- * Authorisation: if CRON_SECRET (or REFRESH_SECRET) is configured, callers must
- * present `Authorization: Bearer <secret>`. Vercel Cron does this automatically.
- * Without a configured secret the endpoint refuses to run in production.
+ * Authorisation: the browser Refresh button POSTs without credentials. The
+ * scheduled cron (GET) must present `Authorization: Bearer <secret>` when
+ * CRON_SECRET (or REFRESH_SECRET) is configured.
  */
 
 type Req = {
@@ -50,17 +50,14 @@ export default async function handler(req: Req, res: Res) {
   }
 
   const secret = process.env.CRON_SECRET ?? process.env.REFRESH_SECRET;
-  if (secret) {
+  // The browser Refresh button POSTs without credentials; the scheduled cron
+  // (GET) must present the secret when one is configured.
+  if (req.method !== 'POST' && secret) {
     const auth = headerValue(req.headers?.authorization);
     if (auth !== `Bearer ${secret}`) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
-  } else if (process.env.VERCEL_ENV === 'production') {
-    res.status(401).json({
-      error: 'Refresh is locked. Set CRON_SECRET to enable scheduled rebuilds.',
-    });
-    return;
   }
 
   const started = Date.now();

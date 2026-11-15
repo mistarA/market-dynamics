@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BacktestPanel } from './components/BacktestPanel';
 import { DetailDrawer } from './components/DetailDrawer';
+import { Dropdown } from './components/Dropdown';
 import { PerfOverlay } from './components/PerfOverlay';
 import { Table } from './components/Table';
 import {
@@ -683,7 +684,9 @@ export default function App() {
       const ok = await triggerRefresh();
       if (!ok) {
         setNotice(
-          'Refresh endpoint unavailable here. Run “npm run backfill” to rebuild the local snapshot.',
+          import.meta.env.VITE_SNAPSHOT_URL
+            ? 'Refresh failed on the server. Try again in a moment.'
+            : 'Refresh endpoint unavailable here. Run “npm run backfill” to rebuild the local snapshot.',
         );
         return;
       }
@@ -979,73 +982,130 @@ export default function App() {
             <div className="controls">
               {indexPicker('controls__index')}
 
-              <ChipGroup
-                className="controls__chips"
-                label="Swing method"
-                value={method}
-                onChange={setMethod}
-                options={METHOD_OPTIONS}
-              />
-
-              <ChipGroup
-                className="controls__chips"
-                label="Timeframe"
-                value={timeframe}
-                onChange={setTimeframe}
-                options={TIMEFRAME_OPTIONS}
-              />
-
-              <ChipGroup
-                className="controls__chips"
-                label="Confirmation"
-                value={confirmation}
-                onChange={setConfirmation}
-                options={CONFIRMATION_OPTIONS}
-              />
-
-              <select
-                className="controls__select controls__select--desktop"
-                aria-label="Direction"
-                title="Direction"
-                value={direction}
-                onChange={(event) =>
-                  setDirection(event.target.value as Direction | 'all')
+              <Dropdown
+                className="controls__dropdown"
+                label={
+                  <>
+                    <span>Filters</span>
+                    <span className="controls__filters-sum" aria-hidden="true">
+                      {method === 'fractal' ? 'Fractal' : 'ATR'} ·{' '}
+                      {TIMEFRAME_LABEL[timeframe]} · {confirmation} candle
+                      {confirmation === 2 ? 's' : ''}
+                    </span>
+                  </>
                 }
               >
-                <option value="all">All shifts</option>
-                <option value="bullish">Bullish only</option>
-                <option value="bearish">Bearish only</option>
-              </select>
+                <div className="dropdown__group">
+                  <span className="dropdown__label">Direction</span>
+                  <div
+                    className="segmented"
+                    role="group"
+                    aria-label="Direction"
+                  >
+                    {(
+                      [
+                        ['all', 'All shifts'],
+                        ['bullish', 'Bullish'],
+                        ['bearish', 'Bearish'],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        className={direction === value ? 'is-active' : ''}
+                        onClick={() => setDirection(value)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <select
-                className="controls__select controls__select--desktop"
-                aria-label="Sort"
-                title="Sort"
-                value={sort.key}
-                onChange={(event) =>
-                  handleSortSelect(event.target.value as SortKey)
+                <div className="dropdown__group">
+                  <span className="dropdown__label">Swing method</span>
+                  <ChipGroup
+                    className="dropdown__seg"
+                    label="Swing method"
+                    value={method}
+                    onChange={setMethod}
+                    options={METHOD_OPTIONS}
+                  />
+                </div>
+
+                <div className="dropdown__group">
+                  <span className="dropdown__label">Timeframe</span>
+                  <ChipGroup
+                    className="dropdown__seg"
+                    label="Timeframe"
+                    value={timeframe}
+                    onChange={setTimeframe}
+                    options={TIMEFRAME_OPTIONS}
+                  />
+                </div>
+
+                <div className="dropdown__group">
+                  <span className="dropdown__label">Confirmation</span>
+                  <ChipGroup
+                    className="dropdown__seg"
+                    label="Confirmation"
+                    value={confirmation}
+                    onChange={setConfirmation}
+                    options={CONFIRMATION_OPTIONS}
+                  />
+                </div>
+              </Dropdown>
+
+              <Dropdown
+                className="controls__dropdown"
+                label={
+                  <>
+                    <span>Sort</span>
+                    <span className="controls__filters-sum" aria-hidden="true">
+                      {SORT_SHORT[sort.key]} {sort.dir === 'asc' ? '↑' : '↓'}
+                    </span>
+                  </>
                 }
               >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                <div className="dropdown__group">
+                  <span className="dropdown__label">Sort by</span>
+                  <div className="dropdown__options" role="group" aria-label="Sort">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.key}
+                        className={sort.key === option.key ? 'is-active' : ''}
+                        onClick={() => handleSortSelect(option.key)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <button
-                className="controls__filters"
-                onClick={() => setSheet('filters')}
-                aria-haspopup="dialog"
-                aria-expanded={sheet === 'filters'}
-              >
-                <span>Filters</span>
-                <span className="controls__filters-sum" aria-hidden="true">
-                  {method === 'fractal' ? 'Fractal' : 'ATR'} ·{' '}
-                  {TIMEFRAME_LABEL[timeframe]} · {confirmation} candle
-                  {confirmation === 2 ? 's' : ''}
-                </span>
-              </button>
+                <div className="dropdown__group dropdown__group--row">
+                  <span className="dropdown__label">Order</span>
+                  <div
+                    className="segmented"
+                    role="group"
+                    aria-label="Sort order"
+                  >
+                    <button
+                      className={sort.dir === 'asc' ? 'is-active' : ''}
+                      onClick={() =>
+                        setSort((current) => ({ ...current, dir: 'asc' }))
+                      }
+                    >
+                      Ascending ↑
+                    </button>
+                    <button
+                      className={sort.dir === 'desc' ? 'is-active' : ''}
+                      onClick={() =>
+                        setSort((current) => ({ ...current, dir: 'desc' }))
+                      }
+                    >
+                      Descending ↓
+                    </button>
+                  </div>
+                </div>
+              </Dropdown>
 
               <input
                 className="controls__search"
@@ -1207,6 +1267,8 @@ export default function App() {
         theme={theme}
         focus={inspectTrade}
         startFull={chartOnly}
+        client={clientRef.current}
+        context={context}
         onClearFocus={() => setInspectTrade(null)}
         onClose={() => {
           setSelected(null);

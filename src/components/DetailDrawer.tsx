@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ColorType,
@@ -16,13 +16,16 @@ import { computeStructure } from '../lib/mss';
 import { findPivots } from '../lib/pivots';
 import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, findZigzagPivots } from '../lib/swings';
 import type {
+  AnalysisContext,
   BacktestTrade,
   Confirmation,
   Detail,
   Direction,
   Row,
   SwingMethod,
+  Timeframe,
 } from '../lib/types';
+import { AnalysisClient } from '../lib/workerClient';
 
 type TradeMode = 'off' | SwingMethod;
 
@@ -106,6 +109,10 @@ type Props = {
   focus: FocusTrade | null;
   /** Opened from a card's chart button: show the chart before the drawer. */
   startFull?: boolean;
+  /** Worker client used to recompute detail when timeframe/method changes. */
+  client: AnalysisClient | null;
+  /** Analysis context (provisional/asOf) for recomputation. */
+  context: AnalysisContext | null;
   onClearFocus: () => void;
   onClose: () => void;
 };
@@ -117,6 +124,8 @@ export function DetailDrawer({
   theme,
   focus,
   startFull = false,
+  client,
+  context,
   onClearFocus,
   onClose,
 }: Props) {
@@ -137,37 +146,64 @@ export function DetailDrawer({
     useState<Confirmation | null>(null);
   const chartConfirmation: Confirmation =
     confirmationOverride ?? detail?.confirmation ?? 1;
+  /** Timeframe can be overridden here without touching the root dashboard. */
+  const [timeframeOverride, setTimeframeOverride] =
+    useState<Timeframe | null>(null);
+  /** Local detail, re-fetched when timeframe/method/confirmation change. */
+  const [localDetail, setLocalDetail] = useState<Detail | null>(detail);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const activeDetail: Detail | null = localDetail ?? detail;
+  const chartTimeframe: Timeframe = timeframeOverride ?? activeDetail?.timeframe ?? 'day';
+
+  const reloadDetail = useCallback(
+    async (tf: Timeframe, method: SwingMethod, confirmation: Confirmation) => {
+      if (!row || !client || !context) return;
+      setDetailLoading(true);
+      try {
+        const res = await client.detail(row.symbol, tf, confirmation, method, context);
+        setLocalDetail(res.detail);
+        setTimeframeOverride(tf);
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [row, client, context],
+  );
 
   /**
    * External swings are found on the same confirmed bars as MSS: when today is
    * still forming, the final bar is excluded from confirmation.
    */
   const detectionBars = useMemo(() => {
-    if (!detail) return [];
-    return detail.provisional ? detail.bars.slice(0, -1) : detail.bars;
-  }, [detail]);
+    if (!activeDetail) return [];
+    return activeDetail.provisional
+      ? activeDetail.bars.slice(0, -1)
+      : activeDetail.bars;
+  }, [activeDetail]);
 
   /**
    * Backtest trades are daily-bar only. Recompute them here for the inspected
    * symbol so the chart can show the exact entries, stops and exits.
    */
   const trades = useMemo(() => {
-    if (!detail || detail.timeframe !== 'day' || detail.bars.length < 3) {
+    if (!activeDetail || activeDetail.timeframe !== 'day' || activeDetail.bars.length < 3) {
       return null;
     }
-    const bars = detail.provisional ? detail.bars.slice(0, -1) : detail.bars;
+    const bars = activeDetail.provisional
+      ? activeDetail.bars.slice(0, -1)
+      : activeDetail.bars;
     return {
-      fractal: runSetup(detail.symbol, bars, { method: 'fractal' }).trades,
-      atr: runSetup(detail.symbol, bars, { method: 'atr' }).trades,
+      fractal: runSetup(activeDetail.symbol, bars, { method: 'fractal' }).trades,
+      atr: runSetup(activeDetail.symbol, bars, { method: 'atr' }).trades,
     };
-  }, [detail]);
+  }, [activeDetail]);
 
   /**
    * The chart always reflects the selected algorithm: same pivots, same
    * confirmation, same MSS flips, and the stop swing of the latest flip.
    */
   const chartStructure = useMemo(() => {
-    if (!detail || detectionBars.length < 3) return null;
+    if (!activeDetail || detectionBars.length < 3) return null;
     const pivots =
       chartMethod === 'fractal'
         ? findPivots(detectionBars, 2)
@@ -176,12 +212,12 @@ export function DetailDrawer({
             EXTERNAL_ATR_MULTIPLE,
             ATR_PERIOD,
           );
-    return computeStructure(detail.bars, {
+    return computeStructure(activeDetail!.bars, {
       confirmation: chartConfirmation,
-      dropLast: detail.provisional,
+      dropLast: activeDetail!.provisional,
       pivots,
     });
-  }, [detail, detectionBars, chartMethod, chartConfirmation]);
+  }, [activeDetail, detectionBars, chartMethod, chartConfirmation]);
 
   const activeMethod: SwingMethod = chartMethod;
   const focusTrades = trades ? trades[activeMethod] : [];
@@ -227,7 +263,7 @@ export function DetailDrawer({
   const focused =
     focus &&
     detail &&
-    focus.symbol === detail.symbol &&
+    focus.symbol === activeDetail?.symbol &&
     focusTrades.length > 0
       ? focusTrades[Math.min(focusIndex, focusTrades.length - 1)]
       : null;
@@ -272,6 +308,14 @@ export function DetailDrawer({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, chartFull, startFull]);
 
+  // Reset overrides and local detail when a new symbol/detail arrives.
+  useEffect(() => {
+    setLocalDetail(detail);
+    setChartOverride(null);
+    setConfirmationOverride(null);
+    setTimeframeOverride(null);
+  }, [detail?.symbol]);
+
   // A chart button opens straight into full screen; any other row opens the drawer.
   useEffect(() => {
     setChartFull(startFull);
@@ -279,7 +323,7 @@ export function DetailDrawer({
 
   useEffect(() => {
     const container = chartRef.current;
-    if (!detail || !container || detail.bars.length === 0) return;
+    if (!activeDetail || !container || activeDetail.bars.length === 0) return;
 
     const light = theme === 'light';
     const textColor = light ? '#7a7164' : '#9b9181';
@@ -328,7 +372,7 @@ export function DetailDrawer({
     });
 
     series.setData(
-      detail.bars.map((bar) => ({
+      activeDetail!.bars.map((bar) => ({
         time: bar.d as Time,
         open: bar.o,
         high: bar.h,
@@ -338,7 +382,7 @@ export function DetailDrawer({
     );
 
     const markers: SeriesMarker<Time>[] = [];
-    const events = chartStructure?.events ?? detail.events;
+    const events = chartStructure?.events ?? activeDetail!.events;
     const eventLabel = chartMethod === 'atr' ? 'ATR MSS' : 'MSS';
     for (const event of events) {
       markers.push({
@@ -479,14 +523,14 @@ export function DetailDrawer({
       const exitIdx = focused.exitIdx ?? focused.entryIdx;
       chart.timeScale().setVisibleLogicalRange({
         from: Math.max(0, focused.entryIdx - 28),
-        to: Math.min(detail.bars.length + 1, Math.max(focused.entryIdx + 14, exitIdx + 14)),
+        to: Math.min(activeDetail!.bars.length + 1, Math.max(focused.entryIdx + 14, exitIdx + 14)),
       });
     } else {
       const view =
-        detail.timeframe === 'day' ? 126 : detail.timeframe === 'week' ? 26 : 7;
+        activeDetail!.timeframe === 'day' ? 126 : activeDetail!.timeframe === 'week' ? 26 : 7;
       chart.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, detail.bars.length - view),
-        to: detail.bars.length + 1,
+        from: Math.max(0, activeDetail!.bars.length - view),
+        to: activeDetail!.bars.length + 1,
       });
     }
 
@@ -494,7 +538,7 @@ export function DetailDrawer({
       chart.remove();
     };
   }, [
-    detail,
+    activeDetail,
     theme,
     chartStructure,
     chartMethod,
@@ -509,7 +553,7 @@ export function DetailDrawer({
 
   if (!row) return null;
 
-  const shown = chartStructure ?? detail;
+  const shown = chartStructure ?? activeDetail;
   const recentEvents = shown ? [...shown.events].slice(-8).reverse() : [];
   const currentEvent = shown?.lastEvent ?? null;
   const currentBarsSince = shown?.barsSince ?? null;
@@ -536,9 +580,9 @@ export function DetailDrawer({
             <div className="drawer__eyebrow">
               {row.industry}
               <span className="dot" />
-              {detail ? TIMEFRAME_LABEL[detail.timeframe] : ''}
-              {detail ? ` · ${chartConfirmation}-bar confirmation` : ''}
-              {detail ? ` · ${SETUP_LABEL[chartMethod]}` : ''}
+              {activeDetail ? TIMEFRAME_LABEL[activeDetail.timeframe] : ''}
+              {activeDetail ? ` · ${chartConfirmation}-bar confirmation` : ''}
+              {activeDetail ? ` · ${SETUP_LABEL[chartMethod]}` : ''}
             </div>
             <h2>
               {row.symbol}
@@ -557,9 +601,30 @@ export function DetailDrawer({
         </header>
 
         <div className="drawer__body">
-          {detail && (
+          {activeDetail && (
             <div className="drawer__toolbar">
               <div className="drawer__toolbar-group">
+                <span className="drawer__toolbar-label">Timeframe</span>
+                <div
+                  className="segmented"
+                  role="group"
+                  aria-label="Chart timeframe"
+                >
+                  {(['day', 'week', 'month'] as Timeframe[]).map((tf) => (
+                    <button
+                      key={tf}
+                      className={chartTimeframe === tf ? 'is-active' : ''}
+                      onClick={() => reloadDetail(tf, chartMethod, chartConfirmation)}
+                      aria-pressed={chartTimeframe === tf}
+                      title={TIMEFRAME_LABEL[tf]}
+                    >
+                      {TIMEFRAME_LABEL[tf]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="drawer__toolbar-group">
+                <span className="drawer__toolbar-label">Swing method</span>
                 <div
                   className="segmented"
                   role="group"
@@ -567,7 +632,7 @@ export function DetailDrawer({
                 >
                   <button
                     className={chartMethod === 'fractal' ? 'is-active' : ''}
-                    onClick={() => setChartMethod('fractal')}
+                    onClick={() => { setChartMethod('fractal'); reloadDetail(chartTimeframe, 'fractal', chartConfirmation); }}
                     aria-pressed={chartMethod === 'fractal'}
                     title="Fractal swings (k=2)"
                   >
@@ -575,13 +640,16 @@ export function DetailDrawer({
                   </button>
                   <button
                     className={chartMethod === 'atr' ? 'is-active' : ''}
-                    onClick={() => setChartMethod('atr')}
+                    onClick={() => { setChartMethod('atr'); reloadDetail(chartTimeframe, 'atr', chartConfirmation); }}
                     aria-pressed={chartMethod === 'atr'}
                     title="ATR zigzag swings (14, 2×)"
                   >
                     ATR
                   </button>
                 </div>
+              </div>
+              <div className="drawer__toolbar-group">
+                <span className="drawer__toolbar-label">Confirmation</span>
                 <div
                   className="segmented"
                   role="group"
@@ -591,7 +659,7 @@ export function DetailDrawer({
                     <button
                       key={item}
                       className={chartConfirmation === item ? 'is-active' : ''}
-                      onClick={() => setConfirmationOverride(item)}
+                      onClick={() => { setConfirmationOverride(item); reloadDetail(chartTimeframe, chartMethod, item); }}
                       aria-pressed={chartConfirmation === item}
                       title={
                         item === 1
@@ -604,7 +672,7 @@ export function DetailDrawer({
                   ))}
                 </div>
               </div>
-              {SHOW_TRADE_OVERLAY && detail.timeframe === 'day' && trades && (
+              {SHOW_TRADE_OVERLAY && activeDetail?.timeframe === 'day' && trades && (
                 <div className="segmented" role="group" aria-label="Backtest overlay">
                   <button
                     className={tradeMode === 'off' ? 'is-active' : ''}
@@ -786,7 +854,7 @@ export function DetailDrawer({
                 <path d="M6 2H2v4M10 14h4v-4M14 6V2h-4M2 10v4h4" />
               </svg>
             </button>
-            {loading && !detail && (
+            {loading && !activeDetail && (
               <div className="chart-loading">
                 <span className="spinner" /> Computing structure…
               </div>
@@ -800,6 +868,48 @@ export function DetailDrawer({
                 <div className="chart-full__bar">
                   <strong>{row.symbol}</strong>
                   <span className="chart-full__name">{row.name}</span>
+                  <div className="chart-full__controls">
+                    <div className="segmented" role="group" aria-label="Chart timeframe">
+                      {(['day', 'week', 'month'] as Timeframe[]).map((tf) => (
+                        <button
+                          key={tf}
+                          className={chartTimeframe === tf ? 'is-active' : ''}
+                          onClick={() => reloadDetail(tf, chartMethod, chartConfirmation)}
+                          aria-pressed={chartTimeframe === tf}
+                        >
+                          {TIMEFRAME_LABEL[tf]}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="segmented" role="group" aria-label="Chart swing method">
+                      <button
+                        className={chartMethod === 'fractal' ? 'is-active' : ''}
+                        onClick={() => { setChartMethod('fractal'); reloadDetail(chartTimeframe, 'fractal', chartConfirmation); }}
+                        aria-pressed={chartMethod === 'fractal'}
+                      >
+                        Fractal
+                      </button>
+                      <button
+                        className={chartMethod === 'atr' ? 'is-active' : ''}
+                        onClick={() => { setChartMethod('atr'); reloadDetail(chartTimeframe, 'atr', chartConfirmation); }}
+                        aria-pressed={chartMethod === 'atr'}
+                      >
+                        ATR
+                      </button>
+                    </div>
+                    <div className="segmented" role="group" aria-label="Chart confirmation">
+                      {([1, 2] as Confirmation[]).map((item) => (
+                        <button
+                          key={item}
+                          className={chartConfirmation === item ? 'is-active' : ''}
+                          onClick={() => { setConfirmationOverride(item); reloadDetail(chartTimeframe, chartMethod, item); }}
+                          aria-pressed={chartConfirmation === item}
+                        >
+                          {item}c
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <button
                     className="icon-btn"
                     onClick={() => {
@@ -821,7 +931,7 @@ export function DetailDrawer({
               document.body,
             )}
 
-          {detail && (
+          {activeDetail && (
             <>
               <div className="stat-grid">
                 <div className="stat">
@@ -871,7 +981,7 @@ export function DetailDrawer({
                     )}
                   </span>
                   <span className="stat__sub">
-                    {detail.bars.length} bars in detection range
+                    {activeDetail?.bars.length} bars in detection range
                   </span>
                 </div>
                 <div className="stat">
@@ -926,7 +1036,7 @@ export function DetailDrawer({
                 {focused
                   ? `Inspecting one ${SETUP_LABEL[activeMethod]} trade on daily bars. The MSS arrows are this setup’s own flips (1-bar confirmation), so the entry should sit on the bar right after its arrow.`
                   : `Arrows are ${SETUP_LABEL[chartMethod]} MSS flips (${chartConfirmation}-bar confirmation). The SL marker is the swing ${chartStructure?.lastEvent?.direction === 'bearish' ? 'high' : 'low'} that backs the latest stop.`}
-                {detail.provisional &&
+                {activeDetail?.provisional &&
                   ' Today’s bar is still forming and is excluded from confirmation.'}
               </p>
             </>
