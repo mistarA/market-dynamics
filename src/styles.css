@@ -1520,6 +1520,52 @@ input[type='search']::placeholder {
   flex-wrap: wrap;
 }
 
+.signal-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 240px;
+}
+
+.signal-filter__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.044em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.signal-filter__title em {
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-soft);
+}
+
+.signal-filter__box {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-filter__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.signal-filter__row input {
+  accent-color: var(--accent);
+}
+
 .chart-full__bar .icon-btn {
   align-self: center;
 }

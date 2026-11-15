@@ -14,7 +14,15 @@ import { formatDate, TIMEFRAME_LABEL } from '../lib/date';
 import { formatPct, formatPrice } from '../lib/format';
 import { computeStructure } from '../lib/mss';
 import { findPivots } from '../lib/pivots';
-import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, findZigzagPivots } from '../lib/swings';
+import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, averageTrueRange, findZigzagPivots } from '../lib/swings';
+import {
+  DEFAULT_SIGNAL_FILTERS,
+  darvasEpisodes,
+  filterSignals,
+  type SignalFilters,
+} from '../lib/signalFilter';
+import { Dropdown } from './Dropdown';
+import { DarvasBoxesPrimitive, type DarvasBoxRect } from './DarvasBoxesPrimitive';
 import type {
   AnalysisContext,
   BacktestTrade,
@@ -152,6 +160,9 @@ export function DetailDrawer({
   /** Local detail, re-fetched when timeframe/method/confirmation change. */
   const [localDetail, setLocalDetail] = useState<Detail | null>(detail);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [signalFilters, setSignalFilters] = useState<SignalFilters>(
+    DEFAULT_SIGNAL_FILTERS,
+  );
   const activeDetail: Detail | null = localDetail ?? detail;
   const chartTimeframe: Timeframe = timeframeOverride ?? activeDetail?.timeframe ?? 'day';
 
@@ -218,6 +229,62 @@ export function DetailDrawer({
       pivots,
     });
   }, [activeDetail, detectionBars, chartMethod, chartConfirmation]);
+
+  const filteredSignals = useMemo(() => {
+    if (!activeDetail || !chartStructure) {
+      return { events: [], total: 0, kept: 0 };
+    }
+    return filterSignals(
+      activeDetail.bars,
+      chartStructure.events,
+      chartStructure.pivots,
+      signalFilters,
+    );
+  }, [activeDetail, chartStructure, signalFilters]);
+
+  /**
+   * Consolidation episodes: nearby overlapping boxes merged into one range.
+   * Each episode resolves with a single MSS, so this is also what the filter
+   * collapses to.
+   */
+  const episodes = useMemo(() => {
+    if (!activeDetail || !chartStructure) return [];
+    return darvasEpisodes(
+      activeDetail.bars,
+      chartStructure.events,
+      chartStructure.pivots,
+      averageTrueRange(activeDetail.bars),
+    );
+  }, [activeDetail, chartStructure]);
+
+  /** Latest consolidation, shown in the Signals panel. */
+  const latestBox = episodes.length > 0 ? episodes[episodes.length - 1] : null;
+
+  /**
+   * One rectangle per consolidation episode. The latest is strongest, older
+   * visible ranges are medium, and ranges the filter rejected stay faint.
+   */
+  const darvasRects = useMemo<DarvasBoxRect[]>(() => {
+    if (episodes.length === 0) return [];
+    const kept = new Set(filteredSignals.events.map((event) => event.idx));
+    const latestIdx = episodes[episodes.length - 1].endIdx;
+    const rgb = theme === 'light' ? '29,122,108' : '63,184,162';
+
+    return episodes.map((episode) => {
+      const visible = episode.events.some((event) => kept.has(event.idx));
+      const latest = episode.endIdx === latestIdx;
+      const fillAlpha = latest ? 0.16 : visible ? 0.07 : 0.025;
+      const strokeAlpha = latest ? 0.8 : visible ? 0.28 : 0.1;
+      return {
+        start: episode.startDate,
+        end: episode.endDate,
+        top: episode.top,
+        bottom: episode.bottom,
+        fill: `rgba(${rgb},${fillAlpha})`,
+        stroke: `rgba(${rgb},${strokeAlpha})`,
+      };
+    });
+  }, [episodes, filteredSignals, theme]);
 
   const activeMethod: SwingMethod = chartMethod;
   const focusTrades = trades ? trades[activeMethod] : [];
@@ -382,7 +449,7 @@ export function DetailDrawer({
     );
 
     const markers: SeriesMarker<Time>[] = [];
-    const events = chartStructure?.events ?? activeDetail!.events;
+    const events = filteredSignals.events;
     const eventLabel = chartMethod === 'atr' ? 'ATR MSS' : 'MSS';
     for (const event of events) {
       markers.push({
@@ -460,6 +527,11 @@ export function DetailDrawer({
 
     markers.sort((a, b) => String(a.time).localeCompare(String(b.time)));
     series.setMarkers(markers);
+
+    // Darvas consolidation boxes behind every visible signal.
+    if (!focused && darvasRects.length > 0) {
+      series.attachPrimitive(new DarvasBoxesPrimitive(darvasRects));
+    }
 
     if (focused) {
       // Keep the target visible even when price never reached it.
@@ -547,6 +619,8 @@ export function DetailDrawer({
     focus,
     focused,
     activeMethod,
+    filteredSignals,
+    darvasRects,
     // Re-render the chart at the new size so the bars fill the canvas.
     chartFull,
   ]);
@@ -909,6 +983,66 @@ export function DetailDrawer({
                         </button>
                       ))}
                     </div>
+                    <Dropdown
+                      className="chart-full__signals"
+                      align="right"
+                      label={<span>Signals</span>}
+                    >
+                      <div className="signal-filter">
+                        <span className="signal-filter__title">
+                          Signal gates
+                          <em>
+                            {filteredSignals.kept}/{filteredSignals.total} kept
+                          </em>
+                        </span>
+                        {latestBox && (
+                          <span className="signal-filter__box">
+                            Latest box: {formatPrice(latestBox.bottom)}–{formatPrice(latestBox.top)} ({latestBox.widthAtr.toFixed(1)}×ATR)
+                          </span>
+                        )}
+                        <label className="signal-filter__row">
+                          <input
+                            type="checkbox"
+                            checked={signalFilters.choppy}
+                            onChange={(event) =>
+                              setSignalFilters((filters) => ({
+                                ...filters,
+                                choppy: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span title="Darvas box: merges nearby overlapping ranges into one consolidation episode and keeps only the last MSS in it; earlier flips are chop">
+                            Darvas box (consolidation)
+                          </span>
+                        </label>
+                        <label className="signal-filter__row">
+                          <input
+                            type="checkbox"
+                            checked={signalFilters.displacement}
+                            onChange={(event) =>
+                              setSignalFilters((filters) => ({
+                                ...filters,
+                                displacement: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span>Displacement ≥ 0.5×ATR</span>
+                        </label>
+                        <label className="signal-filter__row">
+                          <input
+                            type="checkbox"
+                            checked={signalFilters.extension}
+                            onChange={(event) =>
+                              setSignalFilters((filters) => ({
+                                ...filters,
+                                extension: event.target.checked,
+                              }))
+                            }
+                          />
+                          <span>Skip overextended (&gt;3×ATR)</span>
+                        </label>
+                      </div>
+                    </Dropdown>
                   </div>
                   <button
                     className="icon-btn"
