@@ -144,6 +144,13 @@ export type Row = {
   activeHigh: number | null;
   activeLow: number | null;
   spark: number[];
+  /** Highest high and lowest low across the trailing year. */
+  high52: number | null;
+  low52: number | null;
+  /** Close position inside the 52-week range: 0 at the low, 1 at the high. */
+  rangePos: number | null;
+  /** Percent below the 52-week high (zero or negative). */
+  offHighPct: number | null;
   barCount: number;
   lastDate: string;
   provisional: boolean;
@@ -277,4 +284,56 @@ export type BacktestReport = {
   costsBps: number;
   scopes: BacktestScope[];
   warnings: string[];
+};
+
+/** Result dates for one symbol, sourced from NSE on demand. */
+export type ResultInfo = {
+  /** Quarter-end of the latest filed result, ISO date. */
+  lastPeriod: string | null;
+  /** Date that result was filed, ISO date. */
+  lastFiled: string | null;
+  /** Recent quarter-end dates, newest first, ISO. */
+  quarters: string[];
+  /** Next board meeting for financial results, ISO date. */
+  nextDate: string | null;
+  /** What that meeting is for, as NSE words it. */
+  nextPurpose: string | null;
+};
+
+/** One quarter's reported EPS, parsed from the filing's XBRL. */
+export type EpsPoint = {
+  /** Quarter-end, ISO date. */
+  period: string;
+  eps: number;
+};
+
+/** EPS history for one symbol, oldest quarter first. */
+export type EpsInfo = {
+  points: EpsPoint[];
+};
+
+/** The exchange's own prose summary of the latest result announcement. */
+export type ResultSummary = {
+  date: string | null;
+  title: string;
+  summary: string;
+  attachment: string | null;
+};
+
+/** One exchange filing, with links back to the original documents. */
+export type Filing = {
+  /** Date the filing was broadcast, ISO. */
+  date: string | null;
+  /** Quarter-end of a result filing, ISO. */
+  period: string | null;
+  title: string;
+  kind: 'result' | 'filing';
+  pdf: string | null;
+  xbrl: string | null;
+};
+
+/** Everything the result hover / mobile dialog / research page loads on demand. */
+export type ResultDetail = {
+  summary: ResultSummary | null;
+  filings: Filing[];
 };

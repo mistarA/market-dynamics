@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import indicesHandler from './api/indices';
 import indexHandler from './api/index';
 import refreshHandler from './api/refresh';
+import resultsHandler from './api/results';
+import epsHandler from './api/eps';
 
 type Handler = (req: any, res: any) => void | Promise<void>;
 
@@ -17,6 +19,8 @@ function localApi(): Plugin {
     '/api/indices': indicesHandler as Handler,
     '/api/index': indexHandler as Handler,
     '/api/refresh': refreshHandler as Handler,
+    '/api/results': resultsHandler as Handler,
+    '/api/eps': epsHandler as Handler,
   };
 
   return {

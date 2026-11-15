@@ -420,7 +420,10 @@ export function BacktestPanel({
         <header className="bt__head">
           <div>
             <div className="bt__eyebrow">Runtime backtest · daily bars · 2R target</div>
-            <h2>Fractal vs ATR</h2>
+            <div className="bt__title">
+              <h2>Fractal vs ATR</h2>
+              <span className="badge badge--muted bt__wip">WIP</span>
+            </div>
             <p className="muted">
               MSS flip entries (1-candle confirmation), next-open fills, structural
               stops. Choose an index and a stock, then press Run.

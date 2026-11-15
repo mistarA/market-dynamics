@@ -10,8 +10,9 @@ import {
   type Time,
 } from 'lightweight-charts';
 import { runSetup } from '../lib/backtest';
+import { useBackClose } from '../lib/backPress';
 import { formatDate, TIMEFRAME_LABEL } from '../lib/date';
-import { formatPct, formatPrice } from '../lib/format';
+import { cleanIndustry, formatPct, formatPrice } from '../lib/format';
 import { computeStructure } from '../lib/mss';
 import { findPivots } from '../lib/pivots';
 import { ATR_PERIOD, EXTERNAL_ATR_MULTIPLE, findZigzagPivots } from '../lib/swings';
@@ -134,6 +135,8 @@ export function DetailDrawer({
   const [focusIndex, setFocusIndex] = useState(0);
   /** Chart fills the viewport until the user exits or picks another symbol. */
   const [chartFull, setChartFull] = useState(false);
+  // The full-screen chart sits above the drawer, so back closes it first.
+  useBackClose(chartFull && Boolean(row), () => setChartFull(false));
   /**
    * The root dashboard toggle sets the default method. The chip in the chart
    * overrides it for this symbol only; opening another symbol resets it.
@@ -578,7 +581,7 @@ export function DetailDrawer({
         <header className="drawer__head">
           <div>
             <div className="drawer__eyebrow">
-              {row.industry}
+              {cleanIndustry(row.industry) ?? 'NSE equity'}
               <span className="dot" />
               {activeDetail ? TIMEFRAME_LABEL[activeDetail.timeframe] : ''}
               {activeDetail ? ` · ${chartConfirmation}-bar confirmation` : ''}
@@ -588,6 +591,12 @@ export function DetailDrawer({
               {row.symbol}
               <span className="drawer__name">{row.name}</span>
             </h2>
+            <a
+              className="drawer__research"
+              href={`#/research/${encodeURIComponent(row.symbol)}`}
+            >
+              Research links ↗
+            </a>
           </div>
           <div className="drawer__price">
             <strong>{formatPrice(row.close)}</strong>

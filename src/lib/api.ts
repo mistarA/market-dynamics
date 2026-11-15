@@ -1,4 +1,13 @@
-import type { IndexDataset, IndexInfo, Snapshot } from './types';
+import type {
+  EpsInfo,
+  IndexDataset,
+  IndexInfo,
+  Filing,
+  ResultDetail,
+  ResultInfo,
+  ResultSummary,
+  Snapshot,
+} from './types';
 
 const SNAPSHOT_URL =
   (import.meta.env.VITE_SNAPSHOT_URL as string | undefined) ||
@@ -92,4 +101,104 @@ export async function triggerRefresh(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+type ResultsPayload = {
+  results?: Record<string, ResultInfo | null>;
+};
+
+/**
+ * Result dates for a batch of symbols. Missing or unavailable data is not an
+ * error: the row simply renders without the result line.
+ */
+export async function fetchResults(
+  symbols: string[],
+): Promise<Record<string, ResultInfo | null>> {
+  if (symbols.length === 0) return {};
+  try {
+    const response = await fetch(
+      `/api/results?symbols=${encodeURIComponent(symbols.join(','))}`,
+      { cache: 'no-store' },
+    );
+    if (!response.ok) return {};
+    const payload = (await response.json()) as ResultsPayload;
+    return payload.results ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Per-symbol, short-lived browser cache so opening a dialog or hovering a row
+ * twice does not re-hit NSE. */
+const detailCache = new Map<string, { at: number; detail: ResultDetail }>();
+const DETAIL_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * The result summary and recent exchange filings for one symbol, loaded only
+ * when the hover, mobile dialog or research page asks for them.
+ */
+export async function fetchResultDetail(
+  symbol: string,
+): Promise<ResultDetail> {
+  const cached = detailCache.get(symbol);
+  if (cached && Date.now() - cached.at < DETAIL_TTL_MS) return cached.detail;
+
+  try {
+    const response = await fetch(
+      `/api/results?detail=1&symbol=${encodeURIComponent(symbol)}`,
+      { cache: 'no-store' },
+    );
+    if (!response.ok) throw new Error(`Detail request failed (${response.status})`);
+    const payload = (await response.json()) as {
+      summary?: ResultSummary | null;
+      filings?: Filing[];
+    };
+    const detail: ResultDetail = {
+      summary: payload.summary ?? null,
+      filings: Array.isArray(payload.filings) ? payload.filings : [],
+    };
+    detailCache.set(symbol, { at: Date.now(), detail });
+    return detail;
+  } catch {
+    return { summary: null, filings: [] };
+  }
+}
+
+/** Keep each serverless EPS call well inside its execution limit. */
+const EPS_CHUNK = 12;
+
+/**
+ * Quarterly EPS trends for a batch of symbols. Each symbol costs one filings
+ * call plus one XBRL document per quarter, so the batch is split into small
+ * parallel requests: a cold cache cannot time out the whole index, and rows
+ * fill in as each chunk lands. A failure is silent.
+ */
+export async function fetchEps(
+  symbols: string[],
+): Promise<Record<string, EpsInfo>> {
+  if (symbols.length === 0) return {};
+  const chunks: string[][] = [];
+  for (let i = 0; i < symbols.length; i += EPS_CHUNK) {
+    chunks.push(symbols.slice(i, i + EPS_CHUNK));
+  }
+
+  const parts = await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        const response = await fetch(
+          `/api/eps?symbols=${encodeURIComponent(chunk.join(','))}`,
+          { cache: 'no-store' },
+        );
+        if (!response.ok) return {};
+        const payload = (await response.json()) as {
+          eps?: Record<string, EpsInfo>;
+        };
+        return payload.eps ?? {};
+      } catch {
+        return {};
+      }
+    }),
+  );
+
+  return Object.assign({}, ...parts) as Record<string, EpsInfo>;
 }

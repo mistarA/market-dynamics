@@ -31,3 +31,15 @@ export function formatCount(value: number): string {
 export function plural(count: number, singular: string, pluralForm?: string) {
   return count === 1 ? singular : (pluralForm ?? `${singular}s`);
 }
+
+/**
+ * The snapshot's industry field is `—` for every symbol (NSE never returned
+ * one). Treat that placeholder as absent so the UI does not print a lone dash
+ * under every stock.
+ */
+export function cleanIndustry(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (trimmed === '' || trimmed === '—' || trimmed === '-') return null;
+  return trimmed;
+}

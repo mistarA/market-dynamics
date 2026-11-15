@@ -88,6 +88,31 @@ export function analyse(
     .slice(-SPARK_POINTS[timeframe])
     .map((bar) => round(bar.c, 2));
 
+  /**
+   * 52-week range. Filter by date rather than bar count so this stays correct
+   * for daily, weekly and monthly series.
+   */
+  const yearBars = (() => {
+    if (!lastDate) return bars;
+    const end = Date.parse(`${lastDate}T00:00:00Z`);
+    if (Number.isNaN(end)) return bars;
+    const from = new Date(end - 365 * 86_400_000).toISOString().slice(0, 10);
+    const within = bars.filter((bar) => bar.d >= from);
+    return within.length ? within : bars;
+  })();
+  let high52: number | null = null;
+  let low52: number | null = null;
+  for (const bar of yearBars) {
+    if (high52 === null || bar.h > high52) high52 = bar.h;
+    if (low52 === null || bar.l < low52) low52 = bar.l;
+  }
+  const rangePos =
+    high52 !== null && low52 !== null && high52 > low52
+      ? Math.min(1, Math.max(0, (close - low52) / (high52 - low52)))
+      : null;
+  const offHighPct =
+    high52 !== null && high52 > 0 ? round((close / high52 - 1) * 100) : null;
+
   const row: Row = {
     symbol,
     name: meta.name,
@@ -105,6 +130,10 @@ export function analyse(
     activeHigh: structure.activeHigh,
     activeLow: structure.activeLow,
     spark,
+    high52: high52 !== null ? round(high52, 2) : null,
+    low52: low52 !== null ? round(low52, 2) : null,
+    rangePos: rangePos !== null ? round(rangePos, 4) : null,
+    offHighPct,
     barCount: bars.length,
     lastDate,
     provisional: context.provisional && lastDate === context.today,

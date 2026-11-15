@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { formatPrice } from '../lib/format';
+import { cleanIndustry, formatPrice } from '../lib/format';
 import { formatDateShort } from '../lib/date';
 import type { SortKey } from '../lib/rank';
-import type { Row } from '../lib/types';
+import type { EpsInfo, Row, ResultInfo } from '../lib/types';
+import { IndicatorDialog } from './IndicatorDialog';
 import { Sparkline } from './Sparkline';
+import { Trajectory } from './Trajectory';
 
 /** Cards replace the table below this width; keep the breakpoint in sync with CSS. */
 const NARROW = '(max-width: 620px)';
@@ -16,6 +18,10 @@ type Props = {
   onSelect: (symbol: string) => void;
   /** Opens the symbol straight into the full-screen chart. */
   onChart: (symbol: string) => void;
+  /** Result dates per symbol, loaded separately from the snapshot. */
+  results: Record<string, ResultInfo | null>;
+  /** Quarterly EPS per symbol, loaded separately again. */
+  eps: Record<string, EpsInfo>;
 };
 
 function sortIndicator(
@@ -54,6 +60,42 @@ function sinceClass(row: Row): string {
   return row.sincePct > 0 ? 'up' : 'down';
 }
 
+/** Opens the symbol's dedicated research page. Plain hash link, so it shares. */
+function ResearchLink({
+  symbol,
+  className,
+}: {
+  symbol: string;
+  className: string;
+}) {
+  return (
+    <a
+      className={className}
+      href={`#/research/${encodeURIComponent(symbol)}`}
+      title={`Research links for ${symbol}`}
+      aria-label={`Research links for ${symbol}`}
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6.4 9.6 13.6 2.4" />
+        <path d="M8.6 2.4h5v5" />
+        <path d="M12.2 9.4v3.2a1.4 1.4 0 0 1-1.4 1.4H3.8a1.4 1.4 0 0 1-1.4-1.4V5.6a1.4 1.4 0 0 1 1.4-1.4h3.2" />
+      </svg>
+    </a>
+  );
+}
+
 function useNarrow(): boolean {
   const [narrow, setNarrow] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(NARROW).matches,
@@ -80,6 +122,8 @@ export function Table({
   onSort,
   onSelect,
   onChart,
+  results,
+  eps,
 }: Props) {
   const narrow = useNarrow();
   if (narrow) {
@@ -89,6 +133,8 @@ export function Table({
         selected={selected}
         onSelect={onSelect}
         onChart={onChart}
+        results={results}
+        eps={eps}
       />
     );
   }
@@ -124,13 +170,21 @@ export function Table({
               Since shift{sortIndicator(sort, 'since')}
             </th>
             <th className="col-structure">Active swing</th>
+            <th
+              className="col-range"
+              title="52-week high/low with today's close, the latest quarterly EPS trend, and the last result date with its quarter end (plus the next meeting once announced)"
+            >
+              Range · EPS · Qtr
+            </th>
             <th className="col-spark">6M</th>
+            <th className="col-research" aria-label="Research" />
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => {
             const isSelected = selected === row.symbol;
             const insufficient = row.status === 'insufficient';
+            const industry = cleanIndustry(row.industry);
             return (
               <tr
                 key={row.symbol}
@@ -160,7 +214,9 @@ export function Table({
                       )}
                     </span>
                     <span className="stock__name">{row.name}</span>
-                    <span className="stock__industry">{row.industry}</span>
+                    {industry && (
+                      <span className="stock__industry">{industry}</span>
+                    )}
                   </div>
                 </td>
                 <td className="col-shift">
@@ -227,8 +283,18 @@ export function Table({
                     </div>
                   )}
                 </td>
+                <td className="col-range">
+                  <Trajectory
+                    row={row}
+                    info={results[row.symbol]}
+                    eps={eps[row.symbol]}
+                  />
+                </td>
                 <td className="col-spark">
                   <Sparkline values={row.spark} direction={row.direction} />
+                </td>
+                <td className="col-research">
+                  <ResearchLink symbol={row.symbol} className="row-link" />
                 </td>
               </tr>
             );
@@ -244,13 +310,23 @@ function MobileRows({
   selected,
   onSelect,
   onChart,
+  results,
+  eps,
 }: {
   rows: Row[];
   selected: string | null;
   onSelect: (symbol: string) => void;
   onChart: (symbol: string) => void;
+  results: Record<string, ResultInfo | null>;
+  eps: Record<string, EpsInfo>;
 }) {
+  const [detailsSymbol, setDetailsSymbol] = useState<string | null>(null);
+  const detailsRow = detailsSymbol
+    ? (rows.find((item) => item.symbol === detailsSymbol) ?? null)
+    : null;
+
   return (
+    <>
     <ul className="mcards" aria-label="Structure shifts">
       {rows.map((row) => {
         const isSelected = selected === row.symbol;
@@ -341,39 +417,63 @@ function MobileRows({
                       </span>
                     )}
                   </div>
+                  <div className="mcard__range">
+                    <Trajectory
+                      row={row}
+                      info={results[row.symbol]}
+                      eps={eps[row.symbol]}
+                      onActivate={() => setDetailsSymbol(row.symbol)}
+                    />
+                  </div>
                 </>
               )}
             </div>
 
-            <button
-              type="button"
-              className="mcard__chart"
-              aria-label={`Open ${row.symbol} chart full screen`}
-              onClick={(event) => {
-                event.stopPropagation();
-                onChart(row.symbol);
-              }}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              <svg
-                viewBox="0 0 16 16"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.35"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            <div className="mcard__actions">
+              <button
+                type="button"
+                className="mcard__chart"
+                aria-label={`Open ${row.symbol} chart full screen`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onChart(row.symbol);
+                }}
+                onKeyDown={(event) => event.stopPropagation()}
               >
-                <path d="M2.2 1.9v11.9h11.9" />
-                <path d="M4.6 10.6 7 7.7l2.2 1.9 3.2-4.6" />
-                <path d="M12.4 5h1.9v1.9" />
-              </svg>
-            </button>
+                <svg
+                  viewBox="0 0 16 16"
+                  width="16"
+                  height="16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.35"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M2.2 1.9v11.9h11.9" />
+                  <path d="M4.6 10.6 7 7.7l2.2 1.9 3.2-4.6" />
+                  <path d="M12.4 5h1.9v1.9" />
+                </svg>
+              </button>
+              <ResearchLink
+                symbol={row.symbol}
+                className="mcard__chart mcard__research"
+              />
+            </div>
           </li>
         );
       })}
     </ul>
+    {detailsRow && (
+      <IndicatorDialog
+        symbol={detailsRow.symbol}
+        row={detailsRow}
+        info={results[detailsRow.symbol]}
+        eps={eps[detailsRow.symbol]}
+        onClose={() => setDetailsSymbol(null)}
+      />
+    )}
+    </>
   );
 }

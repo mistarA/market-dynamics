@@ -10,6 +10,9 @@ export type Runtime = {
     snapshot: string;
     catalogue: string;
     scripcodes: string;
+    results: string;
+    eps: string;
+    details: string;
     index: (slug: string, version?: string) => string;
   };
 };
@@ -32,6 +35,9 @@ export function runtime(): Runtime {
       snapshot: local ? 'public/data/snapshot.json' : 'snapshots/snapshot.json',
       catalogue: local ? 'data/cache/catalogue.json' : 'state/catalogue.json',
       scripcodes: local ? 'data/cache/scripcodes.json' : 'state/scripcodes.json',
+      results: local ? 'data/cache/results.json' : 'snapshots/results.json',
+      eps: local ? 'data/cache/eps.json' : 'snapshots/eps.json',
+      details: local ? 'data/cache/details.json' : 'snapshots/details.json',
       index: (slug: string, version?: string) => {
         const suffix = version ? `.${version}` : '';
         return local

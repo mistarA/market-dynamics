@@ -3,13 +3,17 @@ import { BacktestPanel } from './components/BacktestPanel';
 import { DetailDrawer } from './components/DetailDrawer';
 import { Dropdown } from './components/Dropdown';
 import { PerfOverlay } from './components/PerfOverlay';
+import { ResearchPage } from './components/ResearchPage';
 import { Table } from './components/Table';
 import {
+  fetchEps,
   fetchIndexDataset,
+  fetchResults,
   fetchServerVersion,
   fetchSnapshot,
   triggerRefresh,
 } from './lib/api';
+import { useBackClose } from './lib/backPress';
 import {
   readCachedDataset,
   readCachedSnapshot,
@@ -37,6 +41,8 @@ import type {
   Direction,
   IndexDataset,
   IndexInfo,
+  EpsInfo,
+  ResultInfo,
   Row,
   Snapshot,
   SwingMethod,
@@ -45,6 +51,14 @@ import type {
 import { AnalysisClient } from './lib/workerClient';
 
 type Theme = 'dark' | 'light';
+
+/** `#/research/DIVISLAB` is the only route; everything else is the dashboard. */
+const RESEARCH_HASH = /^#\/research\/([A-Za-z0-9&._-]+)$/;
+
+function researchSymbolFromHash(): string | null {
+  const match = RESEARCH_HASH.exec(window.location.hash);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 const TIMEFRAMES: Timeframe[] = ['day', 'week', 'month'];
 const METHOD_OPTIONS: { value: SwingMethod; label: string; title: string }[] = [
@@ -230,10 +244,33 @@ export default function App() {
     entryDate: string;
     direction: Direction;
   } | null>(null);
+  /** Symbol whose dedicated research page is open, driven by the URL hash. */
+  const [researchSymbol, setResearchSymbol] = useState<string | null>(() =>
+    researchSymbolFromHash(),
+  );
+  /** Result dates per symbol, fetched once per index load. */
+  const [results, setResults] = useState<Record<string, ResultInfo | null>>({});
+  /** Quarterly EPS trends per symbol, fetched separately from the dates. */
+  const [eps, setEps] = useState<Record<string, EpsInfo>>({});
 
   const clientRef = useRef<AnalysisClient | null>(null);
+  /** Symbols already requested from /api/results, so a failure cannot loop. */
+  const resultsAsked = useRef<Set<string>>(new Set());
+  /** Same guard for /api/eps, which is slower because it parses XBRL. */
+  const epsAsked = useRef<Set<string>>(new Set());
   const firstTableRef = useRef(false);
   const tabsWrapRef = useRef<HTMLDivElement | null>(null);
+
+  // Mobile back should close the topmost overlay, not leave the page.
+  // Declared in increasing stacking order so the last one closes first.
+  useBackClose(moreOpen, () => setMoreOpen(false));
+  useBackClose(selected !== null, () => {
+    setSelected(null);
+    setChartOnly(false);
+    setInspectTrade(null);
+  });
+  useBackClose(sheet !== null, () => setSheet(null));
+  useBackClose(backtestOpen, () => setBacktestOpen(false));
 
   const provisional = Boolean(
     snapshot && market.open && snapshot.asOf === market.today,
@@ -537,6 +574,50 @@ export default function App() {
     }
   }, [inspectTrade, selected]);
 
+  // The research page is a hash route so it can be linked and shared, and so
+  // the browser's back button returns to the dashboard.
+  useEffect(() => {
+    const onHash = () => setResearchSymbol(researchSymbolFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // Result dates are not in the snapshot; ask the server once per symbol.
+  useEffect(() => {
+    const asked = resultsAsked.current;
+    const missing = [...new Set(rows.map((row) => row.symbol))].filter(
+      (symbol) => !asked.has(symbol),
+    );
+    if (missing.length === 0) return;
+    for (const symbol of missing) asked.add(symbol);
+    let cancelled = false;
+    void fetchResults(missing).then((map) => {
+      if (cancelled) return;
+      setResults((previous) => ({ ...previous, ...map }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, results]);
+
+  // EPS needs the XBRL behind each filing, so it lands after the dates.
+  useEffect(() => {
+    const asked = epsAsked.current;
+    const missing = [...new Set(rows.map((row) => row.symbol))].filter(
+      (symbol) => !asked.has(symbol),
+    );
+    if (missing.length === 0) return;
+    for (const symbol of missing) asked.add(symbol);
+    let cancelled = false;
+    void fetchEps(missing).then((map) => {
+      if (cancelled) return;
+      setEps((previous) => ({ ...previous, ...map }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows, eps]);
+
   const handleSelectSymbol = (symbol: string) => {
     setInspectTrade(null);
     setChartOnly(false);
@@ -678,6 +759,11 @@ export default function App() {
     if (refreshing) return;
     setRefreshing(true);
     setNotice(null);
+    // Result dates live outside the snapshot, so re-ask for them too.
+    resultsAsked.current.clear();
+    epsAsked.current.clear();
+    setResults({});
+    setEps({});
     const start = now();
 
     try {
@@ -955,18 +1041,6 @@ export default function App() {
               )}
             </button>
             <button
-              className="btn btn--ghost btn--backtest"
-              onClick={() => {
-                setSelected(null);
-                setInspectTrade(null);
-                setBacktestOpen(true);
-              }}
-              disabled={!snapshot || !workerReady}
-              title="Run the fractal vs ATR backtest"
-            >
-              Backtest
-            </button>
-            <button
               className="btn btn--ghost btn--refresh"
               onClick={handleRefresh}
               disabled={refreshing || !snapshot}
@@ -1198,6 +1272,8 @@ export default function App() {
                 onSort={handleSort}
                 onSelect={handleSelectSymbol}
                 onChart={handleSelectChart}
+                results={results}
+                eps={eps}
               />
             )}
 
@@ -1213,6 +1289,13 @@ export default function App() {
               <span>
                 Data: NSE charting API · raw OHLCV ·{' '}
                 {formatDateTime(snapshot.generatedAt)}
+              </span>
+              <span>
+                Range · EPS · Qtr: the dot is today’s close inside the 52-week
+                low–high; EPS is the last reported quarter with its four-quarter
+                trend; Qtr is the last filing date with that quarter’s end in
+                brackets, and a centre dot adds the next meeting once NSE
+                announces it.
               </span>
             </footer>
           </section>
@@ -1253,8 +1336,22 @@ export default function App() {
               {snapshot.indices.length} primary indices · {datasets.length} of{' '}
               {catalogue.length} loaded · snapshot {snapshot.version}
             </span>
-            <span>
-              Source: NSE charting API. Unlisted intraday moves are not included.
+            <span className="site-foot__right">
+              <span>
+                Source: NSE charting API. Unlisted intraday moves are not included.
+              </span>
+              <button
+                className="btn btn--ghost btn--backtest"
+                onClick={() => {
+                  setSelected(null);
+                  setInspectTrade(null);
+                  setBacktestOpen(true);
+                }}
+                disabled={!workerReady}
+                title="Run the fractal vs ATR backtest"
+              >
+                Backtest
+              </button>
             </span>
           </footer>
         </main>
@@ -1276,6 +1373,23 @@ export default function App() {
           setInspectTrade(null);
         }}
       />
+
+      {researchSymbol && (
+        <ResearchPage
+          symbol={researchSymbol}
+          row={rows.find((item) => item.symbol === researchSymbol) ?? null}
+          onClose={() => {
+            // Clear the route without pushing another entry; back then returns
+            // to the dashboard instead of reopening this page.
+            window.history.replaceState(
+              window.history.state,
+              '',
+              window.location.pathname + window.location.search,
+            );
+            setResearchSymbol(null);
+          }}
+        />
+      )}
 
       {snapshot && (
         <BacktestPanel

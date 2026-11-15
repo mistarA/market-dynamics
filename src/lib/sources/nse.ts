@@ -20,6 +20,42 @@ export type NseRequestOptions = {
   label?: string;
 };
 
+/**
+ * Fetch a non-JSON NSE document (XBRL, iXBRL). Same headers and retry policy as
+ * `nseJson`, but returns the body as text.
+ */
+export async function nseText(
+  url: URL | string,
+  options: NseRequestOptions = {},
+): Promise<string> {
+  const target = typeof url === 'string' ? new URL(url) : url;
+  const timeoutMs = options.timeoutMs ?? 30_000;
+  const label = options.label ?? target.pathname;
+
+  return withRetry(
+    async () => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(target, {
+          headers: { ...NSE_HEADERS, Accept: '*/*' },
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`NSE ${response.status} for ${label}`);
+        }
+        return await response.text();
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    {
+      retries: options.retries ?? 2,
+      onRetry: (attempt) => console.warn(`  retry ${attempt} ${label}`),
+    },
+  );
+}
+
 export async function nseJson<T>(
   url: URL | string,
   options: NseRequestOptions = {},

@@ -1172,7 +1172,7 @@ input[type='search']::placeholder {
 
 .spark {
   display: block;
-  width: 96px;
+  width: 48px;
   height: 26px;
   opacity: 0.85;
 }
@@ -1247,6 +1247,18 @@ input[type='search']::placeholder {
   font-family: var(--sans);
   font-size: 12px;
   color: var(--muted);
+}
+
+.site-foot__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.site-foot .btn {
+  padding: 4px 10px;
+  font-size: 11.5px;
 }
 
 /* ----------------------------------------------------------------- drawer */
@@ -1972,6 +1984,19 @@ input[type='search']::placeholder {
   font-size: 20px;
   font-weight: 650;
   letter-spacing: -0.02em;
+}
+
+.bt__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bt__wip {
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .bt__head p {
@@ -2892,10 +2917,6 @@ input[type='search']::placeholder {
     gap: 6px;
   }
 
-  .btn--backtest {
-    display: none;
-  }
-
   .topbar__row--controls {
     margin-top: 0;
     min-height: 0;
@@ -3359,4 +3380,889 @@ input[type='search']::placeholder {
     font-size: 12px;
     color: var(--accent);
   }
+}
+
+/* ------------------------------------------------------------- research */
+
+.col-research {
+  width: 32px;
+  text-align: center !important;
+}
+
+.row-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: var(--muted-2);
+  opacity: 0.6;
+  transition: color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.grid tbody tr:hover .row-link,
+.row-link:focus-visible {
+  opacity: 1;
+}
+
+.row-link:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  opacity: 1;
+}
+
+.drawer__research {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.drawer__research:hover {
+  color: var(--accent);
+}
+
+.research {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow-y: auto;
+  padding: 26px clamp(16px, 5vw, 56px) 64px;
+  background: var(--bg);
+  animation: fade 0.15s ease-out;
+}
+
+.research__head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--text);
+}
+
+.research__back {
+  flex: none;
+}
+
+.research__id {
+  flex: 1;
+  min-width: 0;
+}
+
+.research__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.research__id h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.research__name {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.research__price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.research__price strong {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.research__price span {
+  font-size: 11.5px;
+}
+
+.research__thesis {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.research__thesis-note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.research__layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.research__col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.research__col-label {
+  font-size: 9.5px;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+.research__group {
+  padding: 16px 18px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.research__group h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.research__group h2::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 10px;
+  margin-right: 7px;
+  background: var(--accent);
+  vertical-align: -1px;
+}
+
+.research__hint {
+  margin: 5px 0 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.research__links {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.research__links li + li {
+  border-top: 0;
+}
+
+/* Each link is a visibly clickable card; headers stay plain text above it. */
+.research__links a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 28px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.research__links a::after {
+  content: '↗';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.research__links a:hover,
+.research__links a:focus-visible {
+  border-color: var(--accent);
+  background: var(--wash);
+  outline: none;
+}
+
+.research__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.research__links a:hover .research__label,
+.research__links a:focus-visible .research__label {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+
+.research__note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.research__host {
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.mcard__actions {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 620px) {
+  .research {
+    padding: 16px 16px 48px;
+  }
+
+  .research__id h1 {
+    font-size: 20px;
+  }
+
+  .research__price {
+    align-items: flex-start;
+  }
+
+  .research__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* -------------------------------------------------- range · eps · results */
+
+.col-range {
+  width: 212px;
+}
+
+/* The 52-week bar takes the space the long sparkline used to hold. */
+.col-spark {
+  width: 64px;
+}
+
+.traj {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  /* Wide enough that the result line never wraps onto a fourth row. */
+  min-width: 176px;
+}
+
+.traj__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Keeps the meaning of each line visible without a hover. */
+.traj__label {
+  flex: none;
+  width: 18px;
+  padding-top: 1px;
+  font-size: 8.5px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+
+/* --- 52-week range ------------------------------------------------------ */
+
+.range {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  outline: none;
+}
+
+.range__track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.range__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+
+.range__dot {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.range__scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.range--empty {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+/* --- quarterly EPS ------------------------------------------------------ */
+
+.eps {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.eps__value {
+  font-size: 10.5px;
+  color: var(--text-soft);
+}
+
+.eps__spark {
+  flex: none;
+  width: 46px;
+  height: 14px;
+  overflow: visible;
+}
+
+.eps__spark polyline {
+  stroke: var(--muted);
+  stroke-width: 1.25;
+}
+
+.eps__spark circle {
+  fill: var(--muted);
+}
+
+.eps--up .eps__spark polyline {
+  stroke: var(--up);
+}
+
+.eps--up .eps__spark circle {
+  fill: var(--up);
+}
+
+.eps--down .eps__spark polyline {
+  stroke: var(--down);
+}
+
+.eps--down .eps__spark circle {
+  fill: var(--down);
+}
+
+.eps__delta {
+  font-size: 9px;
+  color: var(--muted-2);
+}
+
+.eps--up .eps__delta {
+  color: var(--up);
+}
+
+.eps--down .eps__delta {
+  color: var(--down);
+}
+
+.eps--empty,
+.eps--loading {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.eps--loading {
+  display: block;
+  height: 12px;
+}
+
+.eps__pop-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- results: last filed and the next meeting --------------------------- */
+
+.result {
+  flex: 1;
+  display: block;
+  min-width: 0;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.result__line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--muted-2);
+}
+
+.result__dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.result__date {
+  color: var(--text-soft);
+}
+
+/* Quarter-end of the last filing, kept compact in square brackets. */
+.result__period {
+  color: var(--muted-2);
+}
+
+/* Only present when NSE has published the next meeting. */
+.result__sep {
+  color: var(--muted-2);
+}
+
+.result__date--next {
+  color: var(--accent);
+}
+
+.result--empty {
+  font-size: 9.5px;
+  color: var(--muted-2);
+}
+
+.result--loading {
+  display: block;
+  height: 12px;
+}
+
+/* --- shared hover panel ------------------------------------------------- */
+
+.hover-pop {
+  position: fixed;
+  /* Below every drawer/dialog (60+) so a stale panel can never cover one. */
+  z-index: 55;
+  width: min(360px, calc(100vw - 32px));
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-lg);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  pointer-events: auto;
+}
+
+.hover-pop strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hover-pop p {
+  margin: 0 0 6px;
+  /* Exchange summaries can carry long unbroken figures and URLs. */
+  overflow-wrap: anywhere;
+}
+
+.hover-pop__source {
+  font-size: 10px;
+  color: var(--muted-2);
+}
+
+.result__summary {
+  color: var(--text);
+}
+
+/* --- mobile ------------------------------------------------------------- */
+
+.mcard__range {
+  margin-top: 2px;
+}
+
+.mcard__range .traj {
+  gap: 8px;
+}
+
+.mcard__range .traj__label {
+  width: 22px;
+  font-size: 9px;
+}
+
+.mcard__range .eps__spark {
+  width: 60px;
+  height: 16px;
+}
+
+.mcard__range .eps__value {
+  font-size: 11.5px;
+}
+
+.mcard__range .result__line {
+  font-size: 10px;
+}
+
+/* -------------------------------------------------- exchange filings feed */
+
+.filings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line per filing: date · what was filed · the original documents. */
+.filings__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.filings__row:last-child {
+  border-bottom: 0;
+}
+
+.filings__date {
+  flex: none;
+  width: 46px;
+  color: var(--muted-2);
+}
+
+.filings__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-soft);
+}
+
+.filings__docs {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+.filings__docs a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.filings__docs a:hover {
+  text-decoration: underline;
+}
+
+.hover-pop {
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+}
+
+.hover-pop__filings {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.hover-pop__filings .filings__row {
+  font-size: 10px;
+}
+
+/* -------------------------------------------------- mobile details dialog */
+
+.traj--tappable {
+  padding: 6px 8px;
+  margin: -6px -8px;
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+}
+
+.traj--tappable:focus-visible {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.traj--tappable:active {
+  background: var(--wash);
+}
+
+/* A quiet affordance instead of a dedicated button. */
+.traj--tappable::after {
+  content: 'ⓘ tap for details';
+  display: block;
+  margin-top: 7px;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--muted-2);
+}
+
+.ind-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+@media (min-width: 621px) {
+  .ind-overlay {
+    align-items: center;
+  }
+}
+
+.ind-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100%);
+  max-height: 88vh;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-lg);
+}
+
+.ind-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ind-dialog__head strong {
+  display: block;
+  font-size: 15px;
+}
+
+.ind-dialog__head span {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.ind-dialog__body {
+  overflow-y: auto;
+  padding: 4px 16px 8px;
+}
+
+.ind-dialog__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ind-dialog__foot a {
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.ind-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ind-section:last-child {
+  border-bottom: 0;
+}
+
+.ind-section h2 {
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ind-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 16px;
+  margin: 10px 0 0;
+}
+
+.ind-stats--wide {
+  grid-template-columns: 1fr;
+}
+
+.ind-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+}
+
+.ind-stats dt {
+  color: var(--muted);
+}
+
+.ind-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ind-note {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.ind-eps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ind-eps li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+}
+
+.ind-eps b {
+  font-variant-numeric: tabular-nums;
+}
+
+.ind-summary {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+/* -------------------------------------------------- research page filings */
+
+.research__filings {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.research__filings h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.research__filings .filings__row {
+  font-size: 11.5px;
+}
+
+@media (max-width: 980px) {
+  .research__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* -------------------------------------------------- sentiment sub-sections */
+
+.research__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.research__section {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.research__section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.research__section h3 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.research__section .research__hint {
+  margin-bottom: 8px;
 }
