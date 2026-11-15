@@ -56,6 +56,11 @@ export function Trajectory({ row, info, eps, onActivate }: Props) {
       <div className="traj__row">
         <span className="traj__label">52W</span>
         <RangeBar low={row.low52} high={row.high52} value={row.close} />
+        {tappable && (
+          <span className="traj__hint" aria-hidden="true">
+            Tap for details ›
+          </span>
+        )}
       </div>
       <div className="traj__row">
         <span className="traj__label">EPS</span>

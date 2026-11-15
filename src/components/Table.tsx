@@ -64,9 +64,12 @@ function sinceClass(row: Row): string {
 function ResearchLink({
   symbol,
   className,
+  compass = false,
 }: {
   symbol: string;
   className: string;
+  /** Mobile cards use a compass; the desktop trailing link keeps the external arrow. */
+  compass?: boolean;
 }) {
   return (
     <a
@@ -77,21 +80,38 @@ function ResearchLink({
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <svg
-        viewBox="0 0 16 16"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.35"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M6.4 9.6 13.6 2.4" />
-        <path d="M8.6 2.4h5v5" />
-        <path d="M12.2 9.4v3.2a1.4 1.4 0 0 1-1.4 1.4H3.8a1.4 1.4 0 0 1-1.4-1.4V5.6a1.4 1.4 0 0 1 1.4-1.4h3.2" />
-      </svg>
+      {compass ? (
+        <svg
+          viewBox="0 0 16 16"
+          width="15"
+          height="15"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="8" cy="8" r="6.2" />
+          <path d="m10.4 5.6-1.4 3.4-3.4 1.4 1.4-3.4z" />
+        </svg>
+      ) : (
+        <svg
+          viewBox="0 0 16 16"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.35"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M6.4 9.6 13.6 2.4" />
+          <path d="M8.6 2.4h5v5" />
+          <path d="M12.2 9.4v3.2a1.4 1.4 0 0 1-1.4 1.4H3.8a1.4 1.4 0 0 1-1.4-1.4V5.6a1.4 1.4 0 0 1 1.4-1.4h3.2" />
+        </svg>
+      )}
     </a>
   );
 }
@@ -351,116 +371,120 @@ function MobileRows({
             }}
             aria-label={`Open details for ${row.symbol}`}
           >
-            <div className="mcard__body">
-              <div className="mcard__top">
-                <span className="mcard__symbol">
-                  {row.symbol}
-                  {row.status === 'stale' && (
-                    <span className="badge badge--stale">stale</span>
-                  )}
-                </span>
-                <span className="mcard__price num">
-                  {formatPrice(row.close)}
-                </span>
-                <span
-                  className={`mcard__chg num ${
-                    row.changePct === null
-                      ? 'flat'
-                      : row.changePct > 0
-                        ? 'up'
-                        : row.changePct < 0
-                          ? 'down'
-                          : 'flat'
-                  }`}
-                >
-                  {pctText(row.changePct)}
-                </span>
-              </div>
-
-              {insufficient ? (
-                <div className="mcard__mid">
-                  <span className="badge badge--muted">
-                    Insufficient history
+            <div className="mcard__main">
+              <div className="mcard__body">
+                <div className="mcard__top">
+                  <span className="mcard__symbol">
+                    {row.symbol}
+                    {row.status === 'stale' && (
+                      <span className="badge badge--stale">stale</span>
+                    )}
+                  </span>
+                  <span className="mcard__price num">
+                    {formatPrice(row.close)}
+                  </span>
+                  <span
+                    className={`mcard__chg num ${
+                      row.changePct === null
+                        ? 'flat'
+                        : row.changePct > 0
+                          ? 'up'
+                          : row.changePct < 0
+                            ? 'down'
+                            : 'flat'
+                    }`}
+                  >
+                    {pctText(row.changePct)}
                   </span>
                 </div>
-              ) : (
-                <>
+
+                {insufficient ? (
                   <div className="mcard__mid">
-                    {row.direction ? (
-                      <span className={`pill pill--${row.direction}`}>
-                        {row.direction === 'bullish' ? 'Bullish' : 'Bearish'}
-                      </span>
-                    ) : (
-                      <span className="badge badge--muted">No shift</span>
-                    )}
-                    <span className={ageClass(row.barsSince)}>
-                      {ageText(row.barsSince)}
-                    </span>
-                    <span className="mcard__date">
-                      {formatDateShort(row.eventDate)}
+                    <span className="badge badge--muted">
+                      Insufficient history
                     </span>
                   </div>
-                  <div className="mcard__meta">
-                    {row.level !== null && (
-                      <span>
-                        broke <b className="num">{formatPrice(row.level)}</b>
+                ) : (
+                  <>
+                    <div className="mcard__mid">
+                      {row.direction ? (
+                        <span className={`pill pill--${row.direction}`}>
+                          {row.direction === 'bullish' ? 'Bullish' : 'Bearish'}
+                        </span>
+                      ) : (
+                        <span className="badge badge--muted">No shift</span>
+                      )}
+                      <span className={ageClass(row.barsSince)}>
+                        {ageText(row.barsSince)}
                       </span>
-                    )}
-                    {row.sincePct !== null && (
-                      <span>
-                        since{' '}
-                        <b
-                          className={`num ${sinceClass(row)}`}
-                        >
-                          {pctText(row.sincePct)}
-                        </b>
+                      <span className="mcard__date">
+                        {formatDateShort(row.eventDate)}
                       </span>
-                    )}
-                  </div>
-                  <div className="mcard__range">
-                    <Trajectory
-                      row={row}
-                      info={results[row.symbol]}
-                      eps={eps[row.symbol]}
-                      onActivate={() => setDetailsSymbol(row.symbol)}
-                    />
-                  </div>
-                </>
-              )}
+                    </div>
+                    <div className="mcard__meta">
+                      {row.level !== null && (
+                        <span>
+                          broke <b className="num">{formatPrice(row.level)}</b>
+                        </span>
+                      )}
+                      {row.sincePct !== null && (
+                        <span>
+                          since{' '}
+                          <b className={`num ${sinceClass(row)}`}>
+                            {pctText(row.sincePct)}
+                          </b>
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div className="mcard__actions">
+                <button
+                  type="button"
+                  className="mcard__chart"
+                  aria-label={`Open ${row.symbol} chart full screen`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onChart(row.symbol);
+                  }}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  <svg
+                    viewBox="0 0 16 16"
+                    width="17"
+                    height="17"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.35"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M2.2 1.9v11.9h11.9" />
+                    <path d="M4.6 10.6 7 7.7l2.2 1.9 3.2-4.6" />
+                    <path d="M12.4 5h1.9v1.9" />
+                  </svg>
+                </button>
+                <ResearchLink
+                  symbol={row.symbol}
+                  className="mcard__chart mcard__research"
+                  compass
+                />
+              </div>
             </div>
 
-            <div className="mcard__actions">
-              <button
-                type="button"
-                className="mcard__chart"
-                aria-label={`Open ${row.symbol} chart full screen`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onChart(row.symbol);
-                }}
-                onKeyDown={(event) => event.stopPropagation()}
-              >
-                <svg
-                  viewBox="0 0 16 16"
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.35"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M2.2 1.9v11.9h11.9" />
-                  <path d="M4.6 10.6 7 7.7l2.2 1.9 3.2-4.6" />
-                  <path d="M12.4 5h1.9v1.9" />
-                </svg>
-              </button>
-              <ResearchLink
-                symbol={row.symbol}
-                className="mcard__chart mcard__research"
-              />
-            </div>
+            {!insufficient && (
+              <div className="mcard__range">
+                <Trajectory
+                  row={row}
+                  info={results[row.symbol]}
+                  eps={eps[row.symbol]}
+                  onActivate={() => setDetailsSymbol(row.symbol)}
+                />
+              </div>
+            )}
           </li>
         );
       })}

@@ -3015,54 +3015,31 @@ input[type='search']::placeholder {
   }
 
   .mcard {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 13px 14px;
+    display: block;
+    padding: 0;
     border-bottom: 1px solid var(--line);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Everything above the divider opens the item drawer. */
+  .mcard__main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 12px;
+  }
+
+  .mcard__main:active {
+    background: var(--wash);
   }
 
   .mcard__body {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
-  }
-
-  .mcard__chart {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border: 1px solid var(--line-strong);
-    border-radius: 3px;
-    background: var(--bg-soft);
-    color: var(--muted);
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mcard__chart:active {
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-
-  .mcard:active {
-    background: var(--wash);
-  }
-
-  .mcard.is-selected {
-    background: var(--wash);
-    box-shadow: inset 2px 0 0 var(--accent);
-  }
-
-  .mcard.is-insufficient {
-    opacity: 0.65;
   }
 
   .mcard__top {
@@ -3075,10 +3052,10 @@ input[type='search']::placeholder {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 14px;
+    min-width: 0;
+    font-size: 14.5px;
     font-weight: 600;
     letter-spacing: 0.02em;
-    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3100,6 +3077,7 @@ input[type='search']::placeholder {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-height: 20px;
   }
 
   .mcard__date {
@@ -3112,7 +3090,7 @@ input[type='search']::placeholder {
   .mcard__meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 3px 12px;
+    gap: 4px 14px;
     font-family: var(--mono);
     font-size: 10.5px;
     color: var(--muted-2);
@@ -3121,6 +3099,48 @@ input[type='search']::placeholder {
   .mcard__meta b {
     font-weight: 500;
     color: var(--text-soft);
+  }
+
+  .mcard__actions {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* 44px thumb targets, aligned with the header rows. */
+  .mcard__chart {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--bg-soft);
+    color: var(--muted);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mcard__chart:active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .mcard.is-selected {
+    background: var(--wash);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .mcard.is-insufficient {
+    opacity: 0.65;
+  }
+
+  /* Full-width details strip, separated by a hairline divider. */
+  .mcard__range {
+    border-top: 1px solid var(--line);
   }
 
   /* -- drawer touch sizes */
@@ -3936,17 +3956,21 @@ input[type='search']::placeholder {
 
 /* --- mobile ------------------------------------------------------------- */
 
-.mcard__range {
-  margin-top: 2px;
+.mcard__range .traj {
+  gap: 9px;
 }
 
-.mcard__range .traj {
+.mcard__range .traj__row {
   gap: 8px;
 }
 
 .mcard__range .traj__label {
-  width: 22px;
+  width: 24px;
   font-size: 9px;
+}
+
+.mcard__range .range__scale {
+  font-size: 9.5px;
 }
 
 .mcard__range .eps__spark {
@@ -3958,8 +3982,12 @@ input[type='search']::placeholder {
   font-size: 11.5px;
 }
 
-.mcard__range .result__line {
+.mcard__range .eps__delta {
   font-size: 10px;
+}
+
+.mcard__range .result__line {
+  font-size: 10.5px;
 }
 
 /* -------------------------------------------------- exchange filings feed */
@@ -4036,30 +4064,37 @@ input[type='search']::placeholder {
 
 /* -------------------------------------------------- mobile details dialog */
 
+/* The strip itself is the tap target, including its padding. */
 .traj--tappable {
-  padding: 6px 8px;
-  margin: -6px -8px;
-  border-radius: 5px;
+  padding: 11px 14px 12px;
+  border-radius: 0;
   cursor: pointer;
   outline: none;
 }
 
 .traj--tappable:focus-visible {
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .traj--tappable:active {
   background: var(--wash);
 }
 
-/* A quiet affordance instead of a dedicated button. */
-.traj--tappable::after {
-  content: 'ⓘ tap for details';
-  display: block;
-  margin-top: 7px;
-  font-size: 9px;
-  letter-spacing: 0.05em;
+/* Quiet caption on the right of the 52W row, not a separate button. */
+.traj__hint {
+  flex: none;
+  align-self: flex-start;
+  padding-top: 1px;
+  font-size: 8.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
   color: var(--muted-2);
+}
+
+@media (max-width: 360px) {
+  .traj__hint {
+    display: none;
+  }
 }
 
 .ind-overlay {
