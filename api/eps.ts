@@ -1,11 +1,11 @@
-import { runtime } from '../src/lib/server/runtime';
+import { runtime } from '../src/lib/server/runtime.js';
 import {
   buildEps,
   isFresh,
   readEpsCache,
   writeEpsCache,
-} from '../src/lib/server/eps';
-import type { EpsInfo } from '../src/lib/types';
+} from '../src/lib/server/eps.js';
+import type { EpsInfo } from '../src/lib/types.js';
 
 /**
  * Quarterly EPS trend for a batch of symbols.

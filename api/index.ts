@@ -1,12 +1,12 @@
-import { buildIndexDataset } from '../src/lib/buildIndex';
-import { loadCatalogue } from '../src/lib/server/catalogue';
-import { runtime } from '../src/lib/server/runtime';
+import { buildIndexDataset } from '../src/lib/buildIndex.js';
+import { loadCatalogue } from '../src/lib/server/catalogue.js';
+import { runtime } from '../src/lib/server/runtime.js';
 import {
   readCoreSnapshot,
   readScripcodes,
   writeScripcodes,
-} from '../src/lib/server/state';
-import type { IndexDataset } from '../src/lib/types';
+} from '../src/lib/server/state.js';
+import type { IndexDataset } from '../src/lib/types.js';
 
 /**
  * Load one non-primary index on demand.

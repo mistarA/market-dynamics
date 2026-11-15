@@ -1,8 +1,8 @@
 import { put } from '@vercel/blob';
-import { buildSnapshot } from '../src/lib/buildSnapshot';
-import { runtime } from '../src/lib/server/runtime';
-import { readScripcodes, writeScripcodes } from '../src/lib/server/state';
-import type { CatalogueCache } from '../src/lib/server/catalogue';
+import { buildSnapshot } from '../src/lib/buildSnapshot.js';
+import { runtime } from '../src/lib/server/runtime.js';
+import { readScripcodes, writeScripcodes } from '../src/lib/server/state.js';
+import type { CatalogueCache } from '../src/lib/server/catalogue.js';
 
 /**
  * Rebuild the core snapshot from the NSE charting API and publish it to Blob.

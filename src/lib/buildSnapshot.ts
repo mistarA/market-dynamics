@@ -1,9 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
-import { fetchCatalogue, fetchMemberships, unionSymbols } from './sources/indices';
-import { fetchSymbols, type ScripcodeMap, type SymbolReport } from './symbols';
-import { istMarketState } from './date';
-import type { IndexInfo, Snapshot, SnapshotIndex } from './types';
+import { fetchCatalogue, fetchMemberships, unionSymbols } from './sources/indices.js';
+import { fetchSymbols, type ScripcodeMap, type SymbolReport } from './symbols.js';
+import { istMarketState } from './date.js';
+import type { IndexInfo, Snapshot, SnapshotIndex } from './types.js';
 
 /** Number of leading catalogue entries that are always loaded up front. */
 export const PRIMARY_COUNT = 4;

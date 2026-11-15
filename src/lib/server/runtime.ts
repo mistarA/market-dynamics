@@ -1,4 +1,4 @@
-import { createBlobStore, createFileStore, type JsonStore } from './store';
+import { createBlobStore, createFileStore, type JsonStore } from './store.js';
 
 export type Runtime = {
   /** True when reading and writing local files instead of Blob. */

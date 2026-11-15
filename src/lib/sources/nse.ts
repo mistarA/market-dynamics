@@ -1,4 +1,4 @@
-import { withRetry } from '../concurrency';
+import { withRetry } from '../concurrency.js';
 
 /**
  * Shared NSE HTTP helper.

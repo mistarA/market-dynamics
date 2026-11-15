@@ -1,8 +1,8 @@
-import { mapPool } from '../concurrency';
-import { nseJson } from '../sources/nse';
-import { formatDate } from '../date';
-import type { Filing, ResultDetail, ResultInfo, ResultSummary } from '../types';
-import type { Runtime } from './runtime';
+import { mapPool } from '../concurrency.js';
+import { nseJson } from '../sources/nse.js';
+import { formatDate } from '../date.js';
+import type { Filing, ResultDetail, ResultInfo, ResultSummary } from '../types.js';
+import type { Runtime } from './runtime.js';
 
 /**
  * Result dates for one symbol, sourced from NSE.

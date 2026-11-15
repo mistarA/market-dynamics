@@ -1,6 +1,6 @@
-import { fetchConstituents } from './sources/indices';
-import { fetchSymbols, type ScripcodeMap, type SymbolReport } from './symbols';
-import type { IndexDataset, IndexInfo, Snapshot } from './types';
+import { fetchConstituents } from './sources/indices.js';
+import { fetchSymbols, type ScripcodeMap, type SymbolReport } from './symbols.js';
+import type { IndexDataset, IndexInfo, Snapshot } from './types.js';
 
 export type BuildIndexOptions = {
   info: IndexInfo;

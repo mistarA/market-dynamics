@@ -1,6 +1,6 @@
-import { mapPool } from '../concurrency';
-import { nseJson } from './nse';
-import type { IndexInfo } from '../types';
+import { mapPool } from '../concurrency.js';
+import { nseJson } from './nse.js';
+import type { IndexInfo } from '../types.js';
 
 /**
  * NSE index tracker API.

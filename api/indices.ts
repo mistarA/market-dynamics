@@ -1,6 +1,6 @@
-import { loadCatalogue } from '../src/lib/server/catalogue';
-import { runtime } from '../src/lib/server/runtime';
-import { PRIMARY_COUNT } from '../src/lib/buildSnapshot';
+import { loadCatalogue } from '../src/lib/server/catalogue.js';
+import { runtime } from '../src/lib/server/runtime.js';
+import { PRIMARY_COUNT } from '../src/lib/buildSnapshot.js';
 
 /**
  * The complete NSE index catalogue. The client normally reads this from the

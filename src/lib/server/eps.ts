@@ -1,7 +1,7 @@
-import { mapPool } from '../concurrency';
-import { nseJson, nseText } from '../sources/nse';
-import type { EpsInfo, EpsPoint } from '../types';
-import type { Runtime } from './runtime';
+import { mapPool } from '../concurrency.js';
+import { nseJson, nseText } from '../sources/nse.js';
+import type { EpsInfo, EpsPoint } from '../types.js';
+import type { Runtime } from './runtime.js';
 
 /**
  * Quarterly EPS, parsed from the XBRL attached to each integrated filing.

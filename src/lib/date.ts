@@ -1,4 +1,4 @@
-import type { MarketState, Timeframe } from './types';
+import type { MarketState, Timeframe } from './types.js';
 
 const IST_FORMAT = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Kolkata',

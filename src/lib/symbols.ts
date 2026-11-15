@@ -1,6 +1,6 @@
-import { fetchDaily, resolveSymbol } from './sources/charting';
-import { mapPool } from './concurrency';
-import type { Bar, BarTuple, ResolvedSymbol, SnapshotSymbol } from './types';
+import { fetchDaily, resolveSymbol } from './sources/charting.js';
+import { mapPool } from './concurrency.js';
+import type { Bar, BarTuple, ResolvedSymbol, SnapshotSymbol } from './types.js';
 
 /**
  * Runtime scripcode cache.

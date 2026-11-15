@@ -1,12 +1,12 @@
-import { runtime } from '../src/lib/server/runtime';
+import { runtime } from '../src/lib/server/runtime.js';
 import {
   buildResults,
   isFresh,
   readResultsCache,
   resultDetail,
   writeResultsCache,
-} from '../src/lib/server/results';
-import type { ResultDetail, ResultInfo } from '../src/lib/types';
+} from '../src/lib/server/results.js';
+import type { ResultDetail, ResultInfo } from '../src/lib/types.js';
 
 /**
  * Result dates and calendar for a batch of symbols.

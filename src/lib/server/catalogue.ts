@@ -1,6 +1,6 @@
-import { fetchCatalogue } from '../sources/indices';
-import type { IndexInfo } from '../types';
-import type { Runtime } from './runtime';
+import { fetchCatalogue } from '../sources/indices.js';
+import type { IndexInfo } from '../types.js';
+import type { Runtime } from './runtime.js';
 
 export type CatalogueCache = {
   generatedAt: string;

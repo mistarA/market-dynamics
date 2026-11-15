@@ -1,5 +1,5 @@
-import type { Bar, ResolvedSymbol } from '../types';
-import { nseJson } from './nse';
+import type { Bar, ResolvedSymbol } from '../types.js';
+import { nseJson } from './nse.js';
 
 /**
  * NSE charting API adapter (server-side only).

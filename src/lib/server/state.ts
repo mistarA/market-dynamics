@@ -1,6 +1,6 @@
-import type { Snapshot } from '../types';
-import type { ScripcodeMap } from '../symbols';
-import type { Runtime } from './runtime';
+import type { Snapshot } from '../types.js';
+import type { ScripcodeMap } from '../symbols.js';
+import type { Runtime } from './runtime.js';
 
 export async function readCoreSnapshot(rt: Runtime): Promise<Snapshot | null> {
   return rt.store.read<Snapshot>(rt.path.snapshot);
